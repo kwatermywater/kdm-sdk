@@ -186,18 +186,8 @@ asyncio.run(template_query())
 
 ## 문서
 
-### 초보자용
-- **[📚 데이터 가이드](docs/DATA_GUIDE.md)** ⭐ **필독** - 시설 유형, 측정 항목, 용어 설명
-- **[시작하기](docs/GETTING_STARTED.md)** - 설치, 첫 쿼리, 기본 사용법
-
-### API 레퍼런스
-- **[API 개요](docs/API_OVERVIEW.md)** - 아키텍처 및 컴포넌트 개요
-- **[Query API](docs/QUERY_API.md)** - KDMQuery API 전체 레퍼런스
-- **[Templates API](docs/TEMPLATES_API.md)** - 템플릿 시스템 문서
-- **[FacilityPair 가이드](docs/FACILITY_PAIR_QUICKSTART.md)** - 상하류 분석 가이드
-
-### 예제
-- **[예제 모음](examples/)** - 종합 사용 예제
+- **[📚 데이터 가이드](docs/DATA_GUIDE.md)** ⭐ **필독** - 시설 유형, 측정 항목, 용어 설명, 초보자 필수
+- **[예제 모음](examples/)** - 다양한 사용 사례 예제 코드
 
 ## 프로젝트 구조
 
@@ -338,7 +328,7 @@ MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 
 문의사항 및 이슈:
 - 저장소에 이슈 생성
-- 자세한 가이드는 [문서](docs/) 참조
+- 데이터 가이드는 [DATA_GUIDE.md](docs/DATA_GUIDE.md) 참조
 - 사용 패턴은 [예제](examples/) 확인
 
 ## 변경 이력
