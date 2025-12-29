@@ -197,15 +197,16 @@ async def search_dams():
 
 # 출력 예시:
 # 소양강댐 (dam)
-# 소양강댐우량 (rainfall)
-# 소양강댐기상 (weather)
+# 춘천시(소양2교) (rainfall)
+# 춘천 (weather)
 ```
 
 > ⚠️ **중요**: 시설명은 정확히 입력해야 합니다!
 >
-> - ✅ 올바름: `"춘천시(춘천댐하류)"` - 검색으로 확인한 정확한 이름
-> - ❌ 틀림: `"춘천"` - 간략한 이름은 작동하지 않을 수 있음
+> - ✅ 올바름: `"춘천시(소양2교)"` - 검색으로 확인한 정확한 이름
+> - ❌ 틀림: `"소양강댐우량"` - 존재하지 않는 시설명
 >
+> 특히 **우량/기상/수질 관측소**는 카탈로그의 정확한 이름을 사용해야 합니다.
 > 시설명이 불확실하면 반드시 `search_facilities()`로 먼저 검색하세요.
 
 ### 2. 시설별 측정 항목 확인
@@ -331,7 +332,7 @@ asyncio.run(check_reservoir_level())
 async def check_rainfall():
     """강수량 확인"""
     result = await KDMQuery() \
-        .site("소양강댐우량", facility_type="rainfall") \
+        .site("춘천시(소양2교)", facility_type="rainfall") \
         .measurements(["우량", "누가우량"]) \
         .days(3) \
         .execute()
