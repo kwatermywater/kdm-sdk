@@ -8,6 +8,23 @@ version = "0.1.0"
 description = "KDM (K-water Data Model) SDK for water resource data access"
 readme = "README.md"
 requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "K-water", email = "kdm-sdk@example.com"}
+]
+keywords = ["kdm", "k-water", "dam", "water", "hydrology", "water-resources"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Hydrology",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
     "pandas>=2.0.0",
     "requests>=2.31.0",
@@ -15,6 +32,12 @@ dependencies = [
     "mcp>=0.1.0",
     "pyyaml>=6.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/kwatermywater/kdm-sdk"
+Repository = "https://github.com/kwatermywater/kdm-sdk"
+Issues = "https://github.com/kwatermywater/kdm-sdk/issues"
+Documentation = "https://github.com/kwatermywater/kdm-sdk/blob/main/docs/DATA_GUIDE.md"
 
 [project.optional-dependencies]
 dev = [

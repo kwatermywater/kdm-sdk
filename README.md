@@ -42,16 +42,17 @@ K-water Data Model (KDM)을 통해 댐 수문 데이터, 하천 수위, 강우�
 ## 설치
 
 ```bash
-# 데이터 분석가용 (권장)
-pip install git+https://github.com/kwatermywater/kdm-sdk.git#egg=kdm-sdk[analyst]
+# PyPI에서 설치 (권장) ⭐
+pip install kdm-sdk
 
-# 또는 로컬에 클론하여 설치
-git clone https://github.com/kwatermywater/kdm-sdk.git
-cd kdm-sdk
-pip install -e .[analyst]
+# 데이터 분석가용 (분석 도구 포함)
+pip install kdm-sdk[analyst]
 
-# 개발자용
-pip install -e .[dev]
+# 개발자용 (개발 도구 포함)
+pip install kdm-sdk[dev]
+
+# 또는 GitHub에서 최신 버전 설치
+pip install git+https://github.com/kwatermywater/kdm-sdk.git
 ```
 
 `[analyst]` 옵션에는 다음이 포함됩니다: pandas, jupyter, matplotlib, seaborn, plotly, openpyxl, pyarrow, scipy, statsmodels
