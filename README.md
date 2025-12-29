@@ -3,84 +3,89 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
+[![Beta](https://img.shields.io/badge/status-beta-orange.svg)](https://github.com/kwatermywater/kdm-sdk)
 
-Python SDK for accessing K-water Data Model (KDM) through MCP Server.
+> 🚀 **베타 오픈** - K-water Data Model (KDM) 데이터를 쉽게 조회할 수 있는 Python SDK입니다.
 
-## Features
+K-water Data Model (KDM)을 통해 댐 수문 데이터, 하천 수위, 강우량 등의 수자원 데이터를 간편하게 조회하고 분석할 수 있습니다.
 
-- **Fluent Query API** - Chainable, intuitive query builder for KDM data
-- **Batch Queries** - Execute multiple queries in parallel for better performance
-- **Upstream-Downstream Analysis** - Analyze correlation between dam releases and downstream water levels
-- **Template System** - Create reusable query templates in YAML or Python
-- **pandas Integration** - Seamlessly convert results to pandas DataFrames
-- **Easy Export** - One-line export to Excel, CSV, Parquet, JSON
-- **Auto-fallback** - Automatically tries different time periods (hourly → daily → monthly)
-- **Async/await Support** - Built with modern Python async patterns
-- **Type Hints** - Full type annotation for better IDE support
+[English Documentation](README.en.md)
 
-## What This SDK Does (and Doesn't Do)
+## 주요 기능
 
-### ✅ SDK's Job
-- **Data Access**: Easy querying of KDM water resource data
-- **Data Transformation**: Convert to pandas DataFrame
-- **Data Export**: Save to Excel, CSV, Parquet, JSON with proper Korean encoding
+- **직관적인 Query API** - 메서드 체이닝으로 간단한 쿼리 작성
+- **배치 쿼리** - 여러 시설의 데이터를 병렬로 조회하여 성능 향상
+- **상하류 연관 분석** - 댐 방류량과 하류 수위의 상관관계 분석
+- **템플릿 시스템** - YAML 또는 Python으로 재사용 가능한 쿼리 템플릿 작성
+- **pandas 통합** - 조회 결과를 DataFrame으로 즉시 변환
+- **간편한 내보내기** - Excel, CSV, Parquet, JSON으로 한 줄에 저장
+- **자동 폴백** - 시간 단위 데이터가 없으면 자동으로 일/월 단위 조회
+- **비동기 지원** - async/await 패턴으로 효율적인 데이터 조회
+- **타입 힌트** - 전체 코드에 타입 어노테이션으로 IDE 지원 강화
 
-### ❌ NOT SDK's Job (You Already Know How!)
-- **Visualization**: Use matplotlib, seaborn, plotly (you know these already)
-- **Statistical Analysis**: Use pandas, scipy, numpy (you know these already)
-- **Data Cleaning**: Use pandas methods (you know these already)
+## SDK의 역할
 
-**Philosophy**: This SDK gets KDM data into pandas. After that, use your existing data analysis skills!
+### ✅ SDK가 하는 일
+- **데이터 조회**: KDM 수자원 데이터를 쉽게 조회
+- **데이터 변환**: pandas DataFrame으로 자동 변환
+- **데이터 저장**: Excel, CSV, Parquet, JSON으로 한글 인코딩 지원하여 저장
 
-See `examples/analyst_reference.py` for examples of what you can do with pandas after getting the data.
+### ❌ SDK가 하지 않는 일 (분석가 여러분이 이미 잘 아시는 것들!)
+- **시각화**: matplotlib, seaborn, plotly 사용 (이미 익숙하시죠?)
+- **통계 분석**: pandas, scipy, numpy 사용 (이미 익숙하시죠?)
+- **데이터 정제**: pandas 메서드 사용 (이미 익숙하시죠?)
 
-## Installation
+**철학**: 이 SDK는 KDM 데이터를 pandas로 가져오는 것까지만 담당합니다. 그 이후는 여러분의 데이터 분석 능력을 활용하세요!
+
+`examples/analyst_reference.py`에서 데이터를 가져온 후 할 수 있는 분석 예제를 확인하세요.
+
+## 설치
 
 ```bash
-# For data analysts (recommended)
-pip install kdm-sdk[analyst]
+# 데이터 분석가용 (권장)
+pip install git+https://github.com/kwatermywater/kdm-sdk.git#egg=kdm-sdk[analyst]
 
-# Or clone and install locally
-git clone <repository-url>
+# 또는 로컬에 클론하여 설치
+git clone https://github.com/kwatermywater/kdm-sdk.git
 cd kdm-sdk
 pip install -e .[analyst]
 
-# For development
+# 개발자용
 pip install -e .[dev]
 ```
 
-The `[analyst]` extra includes: pandas, jupyter, matplotlib, seaborn, plotly, openpyxl, pyarrow, scipy, statsmodels
+`[analyst]` 옵션에는 다음이 포함됩니다: pandas, jupyter, matplotlib, seaborn, plotly, openpyxl, pyarrow, scipy, statsmodels
 
-## Requirements
+## 요구사항
 
-- Python 3.10 or higher
-- KDM MCP Server (Production: `http://203.237.1.4:8080`)
+- Python 3.10 이상
+- KDM MCP Server (운영 서버: `http://203.237.1.4:8080`)
 - pandas 2.0+
 
-## Quick Start
+## 빠른 시작
 
-### Basic Query with Fluent API
+### 기본 쿼리 (Fluent API)
 
 ```python
 import asyncio
 from kdm_sdk import KDMQuery
 
 async def main():
-    # Simple query for dam storage data
+    # 댐 저수율 데이터 조회
     result = await KDMQuery() \
         .site("소양강댐", facility_type="dam") \
         .measurements(["저수율", "유입량"]) \
         .days(7) \
         .execute()
 
-    # Convert to pandas DataFrame
+    # pandas DataFrame으로 변환
     df = result.to_dataframe()
     print(df.head())
 
 asyncio.run(main())
 ```
 
-### Batch Query (Multiple Facilities)
+### 배치 쿼리 (여러 시설 동시 조회)
 
 ```python
 from kdm_sdk import KDMQuery
@@ -88,30 +93,30 @@ from kdm_sdk import KDMQuery
 async def batch_query():
     query = KDMQuery()
 
-    # Add multiple facilities
+    # 여러 댐 추가
     for dam in ["소양강댐", "충주댐", "팔당댐"]:
         query.site(dam, facility_type="dam") \
              .measurements(["저수율"]) \
              .days(7) \
              .add()
 
-    # Execute in parallel
+    # 병렬 실행
     results = await query.execute_batch(parallel=True)
 
-    # Aggregate into single DataFrame
+    # 단일 DataFrame으로 통합
     combined_df = results.aggregate()
     print(combined_df.groupby("site_name")["저수율"].mean())
 
 asyncio.run(batch_query())
 ```
 
-### Upstream-Downstream Correlation
+### 상하류 상관관계 분석
 
 ```python
 from kdm_sdk import FacilityPair
 
 async def correlation_analysis():
-    # Analyze dam release impact on downstream water level
+    # 댐 방류가 하류 수위에 미치는 영향 분석
     pair = FacilityPair(
         upstream_name="소양강댐",
         downstream_name="춘천",
@@ -119,106 +124,106 @@ async def correlation_analysis():
         downstream_type="water_level"
     )
 
-    # Fetch aligned data
+    # 시간차를 고려한 데이터 조회
     result = await pair.fetch_aligned(days=30, time_key="h_1")
 
-    # Find optimal lag time
+    # 최적 시간차 찾기
     correlation = result.find_optimal_lag(max_lag_hours=12)
-    print(f"Optimal lag: {correlation.lag_hours:.1f} hours")
-    print(f"Correlation: {correlation.correlation:.3f}")
+    print(f"최적 시간차: {correlation.lag_hours:.1f}시간")
+    print(f"상관계수: {correlation.correlation:.3f}")
 
 asyncio.run(correlation_analysis())
 ```
 
-### Template-Based Query
+### 템플릿 기반 쿼리
 
 ```python
 from kdm_sdk.templates import TemplateBuilder
 
 async def template_query():
-    # Create reusable template
-    template = TemplateBuilder("Weekly Dam Monitoring") \
+    # 재사용 가능한 템플릿 생성
+    template = TemplateBuilder("주간 댐 모니터링") \
         .site("소양강댐", facility_type="dam") \
         .measurements(["저수율", "유입량", "방류량"]) \
         .days(7) \
         .time_key("h_1") \
         .build()
 
-    # Execute template
+    # 템플릿 실행
     result = await template.execute()
     df = result.to_dataframe()
 
-    # Save template for reuse
+    # 템플릿 저장하여 재사용
     template.save_yaml("templates/weekly_monitoring.yaml")
 
 asyncio.run(template_query())
 ```
 
-## Documentation
+## 문서
 
-- **[Getting Started](docs/GETTING_STARTED.md)** - Installation, first query, and basic usage
-- **[API Overview](docs/API_OVERVIEW.md)** - High-level architecture and component overview
-- **[Query API](docs/QUERY_API.md)** - Complete KDMQuery API reference
-- **[Templates API](docs/TEMPLATES_API.md)** - Template system documentation
-- **[FacilityPair Guide](docs/FACILITY_PAIR_QUICKSTART.md)** - Upstream-downstream analysis guide
-- **[Examples](examples/)** - Comprehensive usage examples
+- **[시작하기](docs/GETTING_STARTED.md)** - 설치, 첫 쿼리, 기본 사용법
+- **[API 개요](docs/API_OVERVIEW.md)** - 아키텍처 및 컴포넌트 개요
+- **[Query API](docs/QUERY_API.md)** - KDMQuery API 전체 레퍼런스
+- **[Templates API](docs/TEMPLATES_API.md)** - 템플릿 시스템 문서
+- **[FacilityPair 가이드](docs/FACILITY_PAIR_QUICKSTART.md)** - 상하류 분석 가이드
+- **[예제](examples/)** - 종합 사용 예제
 
-## Project Structure
+## 프로젝트 구조
 
 ```
 kdm-sdk/
 ├── src/
 │   └── kdm_sdk/
-│       ├── __init__.py           # Package exports
-│       ├── client.py             # MCP client
+│       ├── __init__.py           # 패키지 exports
+│       ├── client.py             # MCP 클라이언트
 │       ├── query.py              # Fluent query API
-│       ├── results.py            # Result wrappers
+│       ├── results.py            # 결과 래퍼
 │       ├── facilities.py         # FacilityPair
-│       └── templates/            # Template system
+│       └── templates/            # 템플릿 시스템
 │           ├── builder.py        # TemplateBuilder
-│           ├── base.py           # Template base class
-│           └── loaders.py        # YAML/Python loaders
-├── tests/                        # Test suite
-├── examples/                     # Usage examples
-│   ├── basic_usage.py           # KDMClient examples
-│   ├── query_usage.py           # Query API examples
-│   ├── facility_pair_usage.py   # FacilityPair examples
-│   └── templates/               # Template examples
-├── docs/                         # Documentation
-└── README.md                     # This file
+│           ├── base.py           # Template 기본 클래스
+│           └── loaders.py        # YAML/Python 로더
+├── tests/                        # 테스트 스위트
+├── examples/                     # 사용 예제
+│   ├── basic_usage.py           # KDMClient 예제
+│   ├── query_usage.py           # Query API 예제
+│   ├── facility_pair_usage.py   # FacilityPair 예제
+│   └── templates/               # 템플릿 예제
+├── docs/                         # 문서
+└── README.md                     # 이 파일
 ```
 
-## Examples
+## 예제
 
-See the [examples/](examples/) directory for complete examples:
+[examples/](examples/) 디렉토리에서 전체 예제를 확인하세요:
 
-- **[basic_usage.py](examples/basic_usage.py)** - KDMClient basic usage
-- **[query_usage.py](examples/query_usage.py)** - Fluent Query API examples
-- **[facility_pair_usage.py](examples/facility_pair_usage.py)** - Upstream-downstream analysis
-- **[templates/](examples/templates/)** - Template examples (YAML and Python)
+- **[basic_usage.py](examples/basic_usage.py)** - KDMClient 기본 사용법
+- **[query_usage.py](examples/query_usage.py)** - Fluent Query API 예제
+- **[facility_pair_usage.py](examples/facility_pair_usage.py)** - 상하류 분석
+- **[templates/](examples/templates/)** - 템플릿 예제 (YAML 및 Python)
 
-## Testing
+## 테스트
 
 ```bash
-# Run all tests
+# 전체 테스트 실행
 pytest
 
-# Run specific test suite
+# 특정 테스트 스위트 실행
 pytest tests/test_query.py -v
 
-# Run with coverage
+# 커버리지 측정
 pytest --cov=kdm_sdk --cov-report=html
 
-# Run only unit tests
+# 단위 테스트만 실행
 pytest -m unit
 
-# Run integration tests (requires MCP server)
+# 통합 테스트 실행 (MCP 서버 필요)
 pytest -m integration
 ```
 
-## Common Use Cases
+## 주요 사용 사례
 
-### 1. Monitor Multiple Dams
+### 1. 여러 댐 모니터링
 
 ```python
 query = KDMQuery()
@@ -229,7 +234,7 @@ results = await query.execute_batch(parallel=True)
 df = results.aggregate()
 ```
 
-### 2. Year-over-Year Comparison
+### 2. 전년 대비 비교
 
 ```python
 result = await KDMQuery() \
@@ -240,77 +245,95 @@ result = await KDMQuery() \
     .execute()
 ```
 
-### 3. Predict Downstream Water Levels
+### 3. 하류 수위 예측
 
 ```python
 pair = FacilityPair(
     upstream_name="소양강댐",
     downstream_name="의암댐",
-    lag_hours=5.5  # Water takes 5.5 hours to travel
+    lag_hours=5.5  # 물이 이동하는데 5.5시간 소요
 )
 
 result = await pair.fetch_aligned(days=365, time_key="h_1")
 df = result.to_dataframe()
 
-# Use for ML model training
+# 머신러닝 모델 학습에 사용
 X = df[["소양강댐_방류량"]]
 y = df["의암댐_수위"]
 ```
 
-## Development
+## 개발
 
-### TDD Approach
+### 테스트 주도 개발 (TDD)
 
-This project was developed using Test-Driven Development:
+이 프로젝트는 TDD 방법론으로 개발되었습니다:
 
-1. **Red** - Write failing tests first
-2. **Green** - Implement minimal code to pass
-3. **Refactor** - Improve code quality
+1. **Red** - 실패하는 테스트 먼저 작성
+2. **Green** - 테스트를 통과하는 최소한의 코드 구현
+3. **Refactor** - 코드 품질 개선
 
-### Running Tests
+### 테스트 실행
 
 ```bash
-# Install dev dependencies
+# 개발 의존성 설치
 pip install -r requirements-dev.txt
 
-# Run tests
+# 테스트 실행
 pytest -v
 
-# Format code
+# 코드 포맷팅
 black src tests
 
-# Type check
+# 타입 체크
 mypy src
 ```
 
-## Contributing
+## 기여하기
 
-Contributions are welcome! Please ensure all tests pass before submitting PRs.
+기여를 환영합니다! PR 제출 전 모든 테스트가 통과하는지 확인해주세요.
 
-1. Fork the repository
-2. Create a feature branch
-3. Add tests for new features
-4. Ensure all tests pass: `pytest`
-5. Format code: `black src tests`
-6. Submit a pull request
+1. 저장소 포크
+2. 기능 브랜치 생성
+3. 새 기능에 대한 테스트 추가
+4. 모든 테스트 통과 확인: `pytest`
+5. 코드 포맷팅: `black src tests`
+6. Pull Request 제출
 
-## License
+## 라이선스
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 
-## Support
+## 지원
 
-For issues and questions:
-- Create an issue in the repository
-- See [documentation](docs/) for detailed guides
-- Check [examples/](examples/) for usage patterns
+문의사항 및 이슈:
+- 저장소에 이슈 생성
+- 자세한 가이드는 [문서](docs/) 참조
+- 사용 패턴은 [예제](examples/) 확인
 
-## Changelog
+## 변경 이력
 
-See [CHANGELOG.md](CHANGELOG.md) for version history.
+버전 히스토리는 [CHANGELOG.md](CHANGELOG.md)를 참조하세요.
 
-## Acknowledgments
+## 감사의 글
 
-- Built for K-water's Korean Dam Management system
-- Uses MCP (Model Context Protocol) for data access
-- Developed with Test-Driven Development (TDD) methodology
+- K-water의 한국 댐 관리 시스템을 위해 개발되었습니다
+- 데이터 접근을 위해 MCP (Model Context Protocol) 사용
+- 테스트 주도 개발(TDD) 방법론으로 개발되었습니다
+
+---
+
+## 베타 오픈 안내
+
+⚠️ **현재 베타 버전입니다.**
+
+이 SDK는 베타 테스트 단계에 있습니다. 프로덕션 환경에서 사용하기 전에 충분한 테스트를 진행해주세요.
+
+**알려진 제한사항:**
+- 일부 측정 항목은 데이터 가용성에 따라 조회되지 않을 수 있습니다
+- MCP 서버 응답 시간은 네트워크 상태에 따라 달라질 수 있습니다
+
+**피드백:**
+- GitHub Issues를 통해 버그 리포트 및 기능 제안을 부탁드립니다
+- 베타 테스터분들의 피드백이 SDK 개선에 큰 도움이 됩니다
+
+**문의:** GitHub Issues 또는 K-water 담당자에게 연락해주세요.
