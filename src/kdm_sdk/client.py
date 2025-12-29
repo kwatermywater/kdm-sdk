@@ -31,7 +31,7 @@ class KDMClient:
     """
     KDM MCP Client for Python
 
-    Provides access to KDM (Korea Dam and Monitoring) data through MCP protocol.
+    Provides access to KDM (K-water Data Model) data through MCP protocol.
     Supports SSE (Server-Sent Events) transport.
     """
 

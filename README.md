@@ -4,7 +4,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
 
-Python SDK for accessing Korean Dam and Water Resource data through KDM MCP Server.
+Python SDK for accessing K-water Data Model (KDM) through MCP Server.
 
 ## Features
 

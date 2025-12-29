@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "kdm-sdk"
 version = "0.1.0"
-description = "KDM (Korean Dam Management) SDK for water resource data access"
+description = "KDM (K-water Data Model) SDK for water resource data access"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [

@@ -2,7 +2,7 @@
 
 ## Overview
 
-The KDM Query API provides a fluent, chainable interface for building and executing queries against the KDM (Korea Dam and Monitoring) MCP server. It follows the builder pattern and supports both single and batch queries with convenient result handling.
+The KDM Query API provides a fluent, chainable interface for building and executing queries against the KDM (K-water Data Model) MCP server. It follows the builder pattern and supports both single and batch queries with convenient result handling.
 
 ## Quick Start
 
