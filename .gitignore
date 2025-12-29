@@ -24,6 +24,16 @@ wheels/
 venv/
 env/
 .env
+.env.*
+*.env
+secrets/
+credentials/
+*.pem
+*.key
+*.p12
+*.pfx
+config/local.*
+.secrets
 
 # IDE
 .vscode/
