@@ -29,6 +29,34 @@ client = KDMClient(server_url=server_url)
 # client = KDMClient(api_key="sk-xxxxx")  # NEVER DO THIS
 ```
 
+### 🔑 GitHub Token Management
+
+**Setting up GitHub Personal Access Token:**
+
+1. Create `.env` file from template:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Get your GitHub token from: https://github.com/settings/tokens
+   - Required scope: `repo` (full control of private repositories)
+
+3. Add token to `.env`:
+   ```
+   GITHUB_TOKEN=ghp_your_token_here
+   ```
+
+4. Use the provided scripts:
+   ```bash
+   # Setup git authentication (one-time)
+   source scripts/setup_git_auth.sh
+
+   # Push to GitHub
+   ./scripts/git_push.sh
+   ```
+
+For more details, see [scripts/README.md](scripts/README.md)
+
 ### 📝 Protected Files
 
 The following files are automatically excluded by `.gitignore`:

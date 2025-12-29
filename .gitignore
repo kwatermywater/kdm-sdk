@@ -24,8 +24,10 @@ wheels/
 venv/
 env/
 .env
-.env.*
+.env.local
+.env.*.local
 *.env
+!.env.example
 secrets/
 credentials/
 *.pem
