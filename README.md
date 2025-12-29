@@ -62,6 +62,31 @@ pip install -e .[dev]
 - KDM MCP Server (운영 서버: `http://203.237.1.4:8080`)
 - pandas 2.0+
 
+## 처음 사용하시나요?
+
+> 📚 **[데이터 가이드 바로가기](docs/DATA_GUIDE.md)** - 수자원 데이터가 처음이신 분들을 위한 친절한 설명서
+
+**가이드 내용:**
+- 시설 유형 (댐, 수위관측소, 우량관측소 등)
+- 시간 단위 (시간별, 일별, 월별) 및 기간 제한 ⚠️
+- 측정 항목 (저수율, 유입량, 방류량 등) 📊
+- 시설 검색 방법
+- 용어 설명 (저수위, CMS, TOC 등)
+- 초보자용 예제
+
+**빠른 팁:**
+```python
+# 💡 어떤 댐이 있는지 모를 때
+results = await client.search_facilities(query="댐", limit=10)
+
+# 💡 측정 항목이 뭐가 있는지 모를 때
+items = await client.list_measurements(site_name="소양강댐")
+
+# 💡 시간 단위를 모를 때 (자동 선택)
+result = await KDMQuery().site("소양강댐").measurements(["저수율"]) \
+    .days(7).time_key("auto").execute()
+```
+
 ## 빠른 시작
 
 ### 기본 쿼리 (Fluent API)
@@ -161,12 +186,18 @@ asyncio.run(template_query())
 
 ## 문서
 
+### 초보자용
+- **[📚 데이터 가이드](docs/DATA_GUIDE.md)** ⭐ **필독** - 시설 유형, 측정 항목, 용어 설명
 - **[시작하기](docs/GETTING_STARTED.md)** - 설치, 첫 쿼리, 기본 사용법
+
+### API 레퍼런스
 - **[API 개요](docs/API_OVERVIEW.md)** - 아키텍처 및 컴포넌트 개요
 - **[Query API](docs/QUERY_API.md)** - KDMQuery API 전체 레퍼런스
 - **[Templates API](docs/TEMPLATES_API.md)** - 템플릿 시스템 문서
 - **[FacilityPair 가이드](docs/FACILITY_PAIR_QUICKSTART.md)** - 상하류 분석 가이드
-- **[예제](examples/)** - 종합 사용 예제
+
+### 예제
+- **[예제 모음](examples/)** - 종합 사용 예제
 
 ## 프로젝트 구조
 
