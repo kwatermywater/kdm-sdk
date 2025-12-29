@@ -1,0 +1,25 @@
+name: "장흥댐 전년 대비 비교"
+description: "장흥댐의 저수율과 유입량을 전년도와 비교 분석"
+tags:
+  - dam
+  - comparison
+  - year-over-year
+
+sites:
+  - site_name: "장흥댐"
+    facility_type: "dam"
+
+measurements:
+  - "저수율"
+  - "유입량"
+
+period:
+  days: 365
+
+time_key: "d_1"
+
+# Additional metadata
+metadata:
+  purpose: "가뭄 대응 및 저수율 추이 모니터링"
+  author: "KDM SDK"
+  created: "2024-12-24"

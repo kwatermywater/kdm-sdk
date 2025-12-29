@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+.venv
+*.egg-info/
+dist/
+build/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
+.tox/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.DS_Store
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Documentation build
+docs/_build/
+docs/.doctrees/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+
+# Temporary files
+*.log
+*.tmp
+.cache/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Project specific
+examples/output/
+*.xlsx
+*.csv
+*.parquet
+*.json
+!catalog*.json

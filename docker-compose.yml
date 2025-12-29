@@ -1,0 +1,118 @@
+version: '3.8'
+
+services:
+  # Python 3.10 test environment
+  test-py310:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+      args:
+        PYTHON_VERSION: "3.10"
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./pytest.ini:/app/pytest.ini
+    command: pytest -v -m "not integration and not slow"
+    environment:
+      - KDM_MCP_SERVER_URL=http://203.237.1.4:8080/sse
+
+  # Python 3.11 test environment
+  test-py311:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+      args:
+        PYTHON_VERSION: "3.11"
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./pytest.ini:/app/pytest.ini
+    command: pytest -v -m "not integration and not slow"
+    environment:
+      - KDM_MCP_SERVER_URL=http://203.237.1.4:8080/sse
+
+  # Python 3.12 test environment
+  test-py312:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+      args:
+        PYTHON_VERSION: "3.12"
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./pytest.ini:/app/pytest.ini
+    command: pytest -v -m "not integration and not slow"
+    environment:
+      - KDM_MCP_SERVER_URL=http://203.237.1.4:8080/sse
+
+  # Development environment (Python 3.11 default)
+  dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+      args:
+        PYTHON_VERSION: "3.11"
+    volumes:
+      - .:/app
+    ports:
+      - "8888:8888"  # Jupyter Notebook
+    environment:
+      - KDM_MCP_SERVER_URL=http://203.237.1.4:8080/sse
+    command: /bin/bash
+    stdin_open: true
+    tty: true
+
+  # Integration test environment (with MCP server access)
+  integration-test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+      args:
+        PYTHON_VERSION: "3.11"
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./pytest.ini:/app/pytest.ini
+    command: pytest -v -m integration
+    environment:
+      - KDM_MCP_SERVER_URL=http://203.237.1.4:8080/sse
+    network_mode: host  # Allow access to production MCP server
+
+  # Parallel test execution
+  test-parallel:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+      args:
+        PYTHON_VERSION: "3.11"
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./pytest.ini:/app/pytest.ini
+    command: pytest -v -n auto -m "not integration"
+    environment:
+      - KDM_MCP_SERVER_URL=http://203.237.1.4:8080/sse
+
+  # Coverage measurement
+  coverage:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: base
+      args:
+        PYTHON_VERSION: "3.11"
+    volumes:
+      - ./src:/app/src
+      - ./tests:/app/tests
+      - ./pytest.ini:/app/pytest.ini
+      - ./htmlcov:/app/htmlcov
+    command: pytest --cov=kdm_sdk --cov-report=html --cov-report=term -m "not integration"
+    environment:
+      - KDM_MCP_SERVER_URL=http://203.237.1.4:8080/sse

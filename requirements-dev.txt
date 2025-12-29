@@ -1,0 +1,20 @@
+# Include core dependencies
+-r requirements.txt
+
+# Development dependencies
+pytest>=7.4.0
+pytest-asyncio>=0.21.0
+pytest-cov>=4.1.0
+pytest-xdist>=3.3.0
+black>=23.0.0
+mypy>=1.5.0
+
+# Analyst dependencies (for testing export features)
+jupyter>=1.0.0
+matplotlib>=3.7.0
+seaborn>=0.12.0
+plotly>=5.14.0
+openpyxl>=3.1.0
+pyarrow>=12.0.0
+scipy>=1.10.0
+statsmodels>=0.14.0

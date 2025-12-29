@@ -1,0 +1,50 @@
+from setuptools import setup, find_packages
+
+setup(
+    name="kdm-sdk",
+    version="0.1.0",
+    description="KDM (Korean Dam Management) SDK for water resource data access",
+    author="K-water",
+    package_dir={"": "src"},
+    packages=find_packages(where="src"),
+    python_requires=">=3.10",
+    install_requires=[
+        "pandas>=2.0.0",
+        "requests>=2.31.0",
+        "python-dateutil>=2.8.2",
+        "mcp>=0.1.0",
+        "pyyaml>=6.0",
+    ],
+    extras_require={
+        "dev": [
+            "pytest>=7.4.0",
+            "pytest-asyncio>=0.21.0",
+            "black>=23.0.0",
+            "mypy>=1.5.0",
+        ],
+        "analyst": [
+            "jupyter>=1.0.0",
+            "matplotlib>=3.7.0",
+            "seaborn>=0.12.0",
+            "plotly>=5.14.0",
+            "openpyxl>=3.1.0",
+            "pyarrow>=12.0.0",
+            "scipy>=1.10.0",
+            "statsmodels>=0.14.0",
+        ],
+        "all": [
+            "pytest>=7.4.0",
+            "pytest-asyncio>=0.21.0",
+            "black>=23.0.0",
+            "mypy>=1.5.0",
+            "jupyter>=1.0.0",
+            "matplotlib>=3.7.0",
+            "seaborn>=0.12.0",
+            "plotly>=5.14.0",
+            "openpyxl>=3.1.0",
+            "pyarrow>=12.0.0",
+            "scipy>=1.10.0",
+            "statsmodels>=0.14.0",
+        ],
+    },
+)

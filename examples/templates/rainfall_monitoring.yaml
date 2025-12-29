@@ -1,0 +1,68 @@
+name: "다중 지역 강우 모니터링"
+description: "여러 지역의 강우 관측소 데이터를 일괄 조회하여 강우 패턴 분석"
+tags:
+  - rainfall
+  - monitoring
+  - batch
+  - multi-region
+
+# Multiple rainfall stations across different regions
+sites:
+  - site_name: "춘천"
+    facility_type: "rainfall"
+  - site_name: "인제"
+    facility_type: "rainfall"
+  - site_name: "홍천"
+    facility_type: "rainfall"
+  - site_name: "양평"
+    facility_type: "rainfall"
+  - site_name: "가평"
+    facility_type: "rainfall"
+
+# Rainfall measurement items
+measurements:
+  - "강수량"
+
+# Daily aggregation for 30 days
+period:
+  days: 30
+
+# Use daily time key for reliable data
+time_key: "d_1"
+
+# Options for batch execution
+options:
+  parallel: true
+  max_workers: 5
+
+# Additional metadata
+metadata:
+  purpose: "지역별 강우 패턴 분석 및 홍수 위험도 평가"
+  author: "KDM SDK"
+  created: "2024-12-24"
+  use_case: |
+    이 템플릿은 다음과 같은 용도로 활용할 수 있습니다:
+    1. 지역별 강우량 비교 분석
+    2. 집중호우 발생 지역 탐지
+    3. 댐 유입량 예측을 위한 강우 데이터 수집
+    4. 홍수 위험도 평가
+
+# Usage example:
+# >>> from kdm_sdk.templates import load_yaml
+# >>> import asyncio
+# >>>
+# >>> async def main():
+# >>>     template = load_yaml("examples/templates/rainfall_monitoring.yaml")
+# >>>     result = await template.execute()
+# >>>
+# >>>     # Get all rainfall data as DataFrames
+# >>>     dfs = result.to_dataframes()
+# >>>     for station, df in dfs.items():
+# >>>         total_rainfall = df['강수량'].sum()
+# >>>         print(f"{station}: {total_rainfall:.1f}mm")
+# >>>
+# >>>     # Aggregate into single DataFrame for comparison
+# >>>     combined = result.aggregate()
+# >>>     combined.to_csv('rainfall_comparison_30days.csv')
+# >>>
+# >>> asyncio.run(main())
