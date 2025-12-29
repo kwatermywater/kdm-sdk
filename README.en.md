@@ -25,10 +25,10 @@ Python SDK for accessing K-water Data Model (KDM) through MCP Server.
 - **Data Transformation**: Convert to pandas DataFrame
 - **Data Export**: Save to Excel, CSV, Parquet, JSON with proper Korean encoding
 
-### ❌ NOT SDK's Job (You Already Know How!)
-- **Visualization**: Use matplotlib, seaborn, plotly (you know these already)
-- **Statistical Analysis**: Use pandas, scipy, numpy (you know these already)
-- **Data Cleaning**: Use pandas methods (you know these already)
+### ❌ NOT SDK's Job
+- **Visualization**: Use matplotlib, seaborn, plotly, etc.
+- **Statistical Analysis**: Use pandas, scipy, numpy, etc.
+- **Data Cleaning**: Use pandas methods
 
 **Philosophy**: This SDK gets KDM data into pandas. After that, use your existing data analysis skills!
 

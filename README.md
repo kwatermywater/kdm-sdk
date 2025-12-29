@@ -30,10 +30,10 @@ K-water Data Model (KDM)을 통해 댐 수문 데이터, 하천 수위, 강우�
 - **데이터 변환**: pandas DataFrame으로 자동 변환
 - **데이터 저장**: Excel, CSV, Parquet, JSON으로 한글 인코딩 지원하여 저장
 
-### ❌ SDK가 하지 않는 일 (분석가 여러분이 이미 잘 아시는 것들!)
-- **시각화**: matplotlib, seaborn, plotly 사용 (이미 익숙하시죠?)
-- **통계 분석**: pandas, scipy, numpy 사용 (이미 익숙하시죠?)
-- **데이터 정제**: pandas 메서드 사용 (이미 익숙하시죠?)
+### ❌ SDK가 하지 않는 일
+- **시각화**: matplotlib, seaborn, plotly 등 사용
+- **통계 분석**: pandas, scipy, numpy 등 사용
+- **데이터 정제**: pandas 메서드 사용
 
 **철학**: 이 SDK는 KDM 데이터를 pandas로 가져오는 것까지만 담당합니다. 그 이후는 여러분의 데이터 분석 능력을 활용하세요!
 
