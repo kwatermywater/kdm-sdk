@@ -6,6 +6,8 @@
 
 Python SDK for accessing K-water Data Model (KDM) through MCP Server.
 
+K-water Data Model (KDM) is a water resource data service based on [water.or.kr/kdm](https://water.or.kr/kdm). This SDK provides easy access to dam operation data, river water levels, rainfall, and other water resource information.
+
 ## Features
 
 - **Fluent Query API** - Chainable, intuitive query builder for KDM data
