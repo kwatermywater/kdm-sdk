@@ -116,7 +116,7 @@ async def correlation_analysis():
     # Analyze dam release impact on downstream water level
     pair = FacilityPair(
         upstream_name="소양강댐",
-        downstream_name="춘천",
+        downstream_name="춘천시(춘천댐하류)",  # Actual water level station name
         upstream_type="dam",
         downstream_type="water_level"
     )

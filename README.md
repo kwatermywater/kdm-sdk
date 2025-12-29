@@ -145,7 +145,7 @@ async def correlation_analysis():
     # 댐 방류가 하류 수위에 미치는 영향 분석
     pair = FacilityPair(
         upstream_name="소양강댐",
-        downstream_name="춘천",
+        downstream_name="춘천시(춘천댐하류)",  # 실제 수위관측소 이름
         upstream_type="dam",
         downstream_type="water_level"
     )
