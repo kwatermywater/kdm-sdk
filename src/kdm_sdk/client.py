@@ -6,6 +6,7 @@ Connects to KDM MCP Server via SSE transport
 import asyncio
 import json
 import logging
+import math
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urlparse
 
@@ -404,6 +405,275 @@ class KDMClient:
             args["facility_type"] = facility_type
 
         return await self._call_tool("list_measurements", args)
+
+    def _calculate_distance(self, loc1: Dict[str, float], loc2: Dict[str, float]) -> float:
+        """
+        Calculate distance between two geographic points using Haversine formula
+
+        Args:
+            loc1: First location {"lng": float, "lat": float}
+            loc2: Second location {"lng": float, "lat": float}
+
+        Returns:
+            Distance in kilometers
+        """
+        R = 6371  # Earth radius in kilometers
+
+        lat1, lon1 = math.radians(loc1["lat"]), math.radians(loc1["lng"])
+        lat2, lon2 = math.radians(loc2["lat"]), math.radians(loc2["lng"])
+
+        dlat = lat2 - lat1
+        dlon = lon2 - lon1
+
+        a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+        c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))
+
+        return R * c
+
+    def _is_downstream(self, dam_location: Dict[str, float], station_location: Dict[str, float]) -> bool:
+        """
+        Determine if a station is downstream of a dam
+
+        Simple heuristic: downstream is typically south (lower latitude)
+        This works for most Korean rivers which flow north to south
+
+        Args:
+            dam_location: Dam location {"lng": float, "lat": float}
+            station_location: Station location {"lng": float, "lat": float}
+
+        Returns:
+            True if station is downstream (south) of dam
+        """
+        return station_location["lat"] < dam_location["lat"]
+
+    def _match_by_basin(
+        self,
+        dam_basin: str,
+        direction: str,
+        all_facilities: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
+        """
+        Match stations by basin name
+
+        Args:
+            dam_basin: Dam's basin name (e.g., "소양강댐하류")
+            direction: "downstream" or "upstream"
+            all_facilities: List of all facilities to search
+
+        Returns:
+            List of matching facilities with match_type="basin"
+        """
+        if not dam_basin:
+            return []
+
+        # Extract base basin name
+        # "소양강댐하류" → "소양강댐"
+        base_basin = dam_basin.replace("하류", "").replace("상류", "")
+
+        # Construct target basin name based on direction
+        if direction == "downstream":
+            target_basin = f"{base_basin}하류"
+        else:  # upstream
+            target_basin = f"{base_basin}상류"
+
+        # Filter facilities by basin
+        # Handle nested structure from MCP server
+        matches = []
+        for facility_result in all_facilities:
+            facility = facility_result.get("site", facility_result)
+            if facility.get("basin") == target_basin:
+                # Create flattened result with match_type
+                result = facility.copy()
+                result["match_type"] = "basin"
+                matches.append(result)
+
+        return matches
+
+    def _geographic_search(
+        self,
+        dam_location: Dict[str, float],
+        direction: str,
+        all_facilities: List[Dict[str, Any]],
+        max_distance_km: float
+    ) -> List[Dict[str, Any]]:
+        """
+        Search for stations using geographic distance and direction
+
+        Args:
+            dam_location: Dam location {"lng": float, "lat": float}
+            direction: "downstream" or "upstream"
+            all_facilities: List of all facilities to search
+            max_distance_km: Maximum distance in kilometers
+
+        Returns:
+            List of matching facilities sorted by distance, with distance_km and match_type="geographic"
+        """
+        candidates = []
+
+        for facility_result in all_facilities:
+            # Handle nested structure from MCP server
+            facility = facility_result.get("site", facility_result)
+            station_loc = facility.get("location")
+            if not station_loc:
+                continue
+
+            # Calculate distance
+            distance = self._calculate_distance(dam_location, station_loc)
+
+            # Filter by maximum distance
+            if distance > max_distance_km:
+                continue
+
+            # Filter by direction
+            is_down = self._is_downstream(dam_location, station_loc)
+            if direction == "downstream" and not is_down:
+                continue
+            if direction == "upstream" and is_down:
+                continue
+
+            # Add to candidates
+            result = facility.copy()
+            result["distance_km"] = round(distance, 2)
+            result["match_type"] = "geographic"
+            candidates.append(result)
+
+        # Sort by distance
+        candidates.sort(key=lambda x: x["distance_km"])
+
+        return candidates
+
+    async def find_related_stations(
+        self,
+        dam_name: str,
+        direction: str = "downstream",
+        station_type: str = "water_level",
+        max_distance_km: float = 100.0,
+        limit: int = 10
+    ) -> List[Dict[str, Any]]:
+        """
+        Find upstream or downstream monitoring stations related to a dam
+
+        Uses two strategies:
+        1. Basin matching (priority): Find stations in the same watershed
+        2. Geographic search (fallback): Find stations by distance and direction
+
+        Args:
+            dam_name: Name of the dam (e.g., "소양강댐")
+            direction: "downstream" or "upstream"
+            station_type: Type of station to find (default: "water_level")
+            max_distance_km: Maximum distance for geographic search (default: 100.0)
+            limit: Maximum number of results (default: 10)
+
+        Returns:
+            List of matching stations with site_id, site_name, match_type, etc.
+
+        Raises:
+            ValueError: If dam not found or invalid direction
+
+        Example:
+            >>> client = KDMClient()
+            >>> await client.connect()
+            >>>
+            >>> # Find downstream water level stations for Soyang Dam
+            >>> stations = await client.find_related_stations(
+            ...     dam_name="소양강댐",
+            ...     direction="downstream"
+            ... )
+            >>>
+            >>> for s in stations:
+            ...     print(f"{s['site_name']} (ID: {s['site_id']})")
+            춘천시(춘천댐하류) (ID: 11301)
+        """
+        # Step 1: Validate input
+        if direction not in ["upstream", "downstream"]:
+            raise ValueError("direction must be 'upstream' or 'downstream'")
+
+        logger.info(
+            f"[find_related_stations] Searching {direction} "
+            f"{station_type} stations for {dam_name}"
+        )
+
+        # Step 2: Find dam information
+        dam_results = await self.search_facilities(
+            query=dam_name,
+            facility_type="dam",
+            limit=5
+        )
+
+        if not dam_results:
+            raise ValueError(f"Dam '{dam_name}' not found in catalog")
+
+        # Use first result (most relevant match)
+        # Handle nested structure from MCP server: {'site': {...}, 'measurements': [...]}
+        dam_result = dam_results[0]
+        dam_info = dam_result.get("site", dam_result)  # Get 'site' if exists, else use raw result
+        dam_basin = dam_info.get("basin")
+        dam_location = dam_info.get("location")
+
+        logger.debug(
+            f"Dam info: basin={dam_basin}, location={dam_location}"
+        )
+
+        # Step 3 & 4: Try basin matching first
+        results = []
+        if dam_basin:
+            # Extract base name for searching
+            base_basin = dam_basin.replace("하류", "").replace("상류", "")
+
+            # Search for stations with basin name
+            # Use the base name as query to find related stations
+            search_query = base_basin.replace("댐", "")  # e.g., "소양강댐" → "소양강"
+
+            all_stations = await self.search_facilities(
+                query=search_query,
+                facility_type=station_type,
+                limit=100
+            )
+
+            basin_matches = self._match_by_basin(
+                dam_basin, direction, all_stations
+            )
+
+            if basin_matches:
+                logger.info(
+                    f"Basin matching: found {len(basin_matches)} stations"
+                )
+                results = basin_matches
+
+        # Step 5: Geographic fallback if basin matching failed
+        if not results and dam_location:
+            logger.info("Basin matching failed, using geographic search")
+
+            # Search for nearby stations (use dam name prefix)
+            search_prefix = dam_name.replace("댐", "")[:2]  # Get first 2 chars
+            nearby_stations = await self.search_facilities(
+                query=search_prefix,
+                facility_type=station_type,
+                limit=100
+            )
+
+            results = self._geographic_search(
+                dam_location, direction, nearby_stations, max_distance_km
+            )
+
+            logger.info(
+                f"Geographic search: found {len(results)} stations "
+                f"within {max_distance_km}km"
+            )
+
+        # Step 6: Handle no results
+        if not results:
+            logger.warning(
+                f"No {direction} stations found for {dam_name}"
+            )
+            if not dam_location:
+                logger.warning(
+                    f"Dam location data not available, "
+                    f"cannot perform geographic search"
+                )
+
+        # Step 7: Apply limit and return
+        return results[:limit]
 
     async def health_check(self) -> bool:
         """
