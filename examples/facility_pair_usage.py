@@ -25,7 +25,7 @@ async def example_with_real_data():
     print("=" * 60)
 
     # Initialize KDM client
-    client = KDMClient(server_url="http://localhost:8001/sse")
+    client = KDMClient()  # Uses default: http://203.237.1.4:8080/sse
 
     try:
         # Connect to server
@@ -262,7 +262,7 @@ def main():
     print("Example with Real KDM Data")
     print("=" * 60)
     print("\nTo run the real data example, ensure:")
-    print("  1. KDM MCP Server is running on http://localhost:8001")
+    print("  1. KDM MCP Server is running on http://203.237.1.4:8080")
     print("  2. Uncomment the line below:")
     print("\n# asyncio.run(example_with_real_data())")
 

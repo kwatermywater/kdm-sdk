@@ -2,7 +2,7 @@
 Performance Tests for KDM SDK
 
 These tests measure and benchmark the performance of various SDK operations.
-They require a running KDM MCP Server at http://localhost:8001
+They require a running KDM MCP Server at http://203.237.1.4:8080
 
 Run these tests with:
     pytest -v -m "integration and slow"
@@ -39,7 +39,7 @@ pytestmark = [pytest.mark.integration, pytest.mark.slow]
 @pytest.fixture
 async def connected_client():
     """Provide a connected KDM client"""
-    client = KDMClient(server_url="http://localhost:8001/sse")
+    client = KDMClient(server_url="http://203.237.1.4:8080/sse")
     await client.connect()
     yield client
     await client.disconnect()

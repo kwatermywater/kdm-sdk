@@ -1,7 +1,7 @@
 """
 Integration Tests for KDM SDK
 
-These tests require a running KDM MCP Server at http://localhost:8001
+These tests require a running KDM MCP Server at http://203.237.1.4:8080
 They verify the entire workflow from connection to data retrieval and conversion.
 
 Run these tests with:
@@ -9,7 +9,7 @@ Run these tests with:
     pytest -v -m "not integration"  # Skip integration tests
 
 Prerequisites:
-- KDM MCP Server must be running at http://localhost:8001
+- KDM MCP Server must be running at http://203.237.1.4:8080
 - Server must have access to real KDM data
 """
 
@@ -48,7 +48,7 @@ async def connected_client():
 
     Yields a connected client and ensures proper cleanup.
     """
-    client = KDMClient(server_url="http://localhost:8001/sse")
+    client = KDMClient(server_url="http://203.237.1.4:8080/sse")
     try:
         await client.connect()
         yield client
@@ -721,7 +721,7 @@ async def test_server_availability():
 
         await client.disconnect()
     except asyncio.TimeoutError:
-        pytest.skip("KDM MCP Server not available at http://localhost:8001")
+        pytest.skip("KDM MCP Server not available at http://203.237.1.4:8080")
     except Exception as e:
         pytest.skip(f"Cannot connect to KDM MCP Server: {e}")
 

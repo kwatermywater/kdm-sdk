@@ -15,9 +15,9 @@ from kdm_sdk.client import KDMClient
 @pytest.mark.asyncio
 async def test_client_initialization():
     """클라이언트 초기화 테스트"""
-    client = KDMClient(server_url="http://localhost:8001/sse")
+    client = KDMClient(server_url="http://203.237.1.4:8080/sse")
     assert client is not None
-    assert client.server_url == "http://localhost:8001/sse"
+    assert client.server_url == "http://203.237.1.4:8080/sse"
 
 
 @pytest.mark.asyncio
