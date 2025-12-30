@@ -13,6 +13,8 @@ K-water Data Model (KDM) is a water resource data service based on [water.or.kr/
 - **Fluent Query API** - Chainable, intuitive query builder for KDM data
 - **Batch Queries** - Execute multiple queries in parallel for better performance
 - **Upstream-Downstream Analysis** - Analyze correlation between dam releases and downstream water levels
+- **🆕 Automatic Station Discovery** - Find related monitoring stations using basin matching + geographic search
+- **🆕 Original Facility Codes** - Access source agency codes (K-water, Ministry of Environment) for system integration
 - **Template System** - Create reusable query templates in YAML or Python
 - **pandas Integration** - Seamlessly convert results to pandas DataFrames
 - **Easy Export** - One-line export to Excel, CSV, Parquet, JSON
@@ -154,6 +156,34 @@ async def template_query():
     template.save_yaml("templates/weekly_monitoring.yaml")
 
 asyncio.run(template_query())
+```
+
+### Automatic Station Discovery (New Feature)
+
+```python
+from kdm_sdk import KDMClient
+
+async def find_stations():
+    async with KDMClient() as client:
+        # Find downstream water level stations for a dam
+        result = await client.find_related_stations(
+            dam_name="소양강댐",
+            direction="downstream",
+            station_type="water_level"
+        )
+
+        # Dam information (with original facility code)
+        dam = result['dam']
+        print(f"Dam: {dam['site_name']}")
+        print(f"Original Code: {dam['original_facility_code']}")  # K-water code
+
+        # Related stations
+        for station in result['stations']:
+            print(f"- {station['site_name']}: {station['original_facility_code']}")
+            print(f"  Match Type: {station['match_type']}")  # basin or geographic
+            print(f"  Distance: {station['distance_km']:.1f} km")
+
+asyncio.run(find_stations())
 ```
 
 ## Documentation

@@ -16,6 +16,8 @@ K-water Data Model (KDM)은 [water.or.kr/kdm](https://water.or.kr/kdm) 기반의
 - **직관적인 Query API** - 메서드 체이닝으로 간단한 쿼리 작성
 - **배치 쿼리** - 여러 시설의 데이터를 병렬로 조회하여 성능 향상
 - **상하류 연관 분석** - 댐 방류량과 하류 수위의 상관관계 분석
+- **🆕 관측소 자동 탐색** - 댐의 상하류 관측소 자동 검색 (Basin 매칭 + 지리 기반 검색)
+- **🆕 원본 시설코드 제공** - K-water, 환경부 등 원천 기관의 시설코드로 외부 시스템 연동
 - **템플릿 시스템** - YAML 또는 Python으로 재사용 가능한 쿼리 템플릿 작성
 - **pandas 통합** - 조회 결과를 DataFrame으로 즉시 변환
 - **간편한 내보내기** - Excel, CSV, Parquet, JSON으로 한 줄에 저장
@@ -183,6 +185,34 @@ async def template_query():
     template.save_yaml("templates/weekly_monitoring.yaml")
 
 asyncio.run(template_query())
+```
+
+### 관측소 자동 탐색 (신규 기능)
+
+```python
+from kdm_sdk import KDMClient
+
+async def find_stations():
+    async with KDMClient() as client:
+        # 댐의 하류 수위관측소 자동 검색
+        result = await client.find_related_stations(
+            dam_name="소양강댐",
+            direction="downstream",
+            station_type="water_level"
+        )
+
+        # 댐 정보 (원본 시설코드 포함)
+        dam = result['dam']
+        print(f"댐: {dam['site_name']}")
+        print(f"원본코드: {dam['original_facility_code']}")  # K-water 코드
+
+        # 관련 관측소 목록
+        for station in result['stations']:
+            print(f"- {station['site_name']}: {station['original_facility_code']}")
+            print(f"  매칭방식: {station['match_type']}")  # basin or geographic
+            print(f"  거리: {station['distance_km']:.1f} km")
+
+asyncio.run(find_stations())
 ```
 
 ## 문서
@@ -353,7 +383,6 @@ MIT License - 자세한 내용은 [LICENSE](LICENSE) 파일을 참조하세요.
 **알려진 제한사항:**
 - 일부 측정 항목은 데이터 가용성에 따라 조회되지 않을 수 있습니다
 - MCP 서버 응답 시간은 네트워크 상태에 따라 달라질 수 있습니다
-- `find_related_stations()` 기능은 MCP 서버 개선 대기 중 (제한적 동작)
 
 **피드백:**
 - GitHub Issues를 통해 버그 리포트 및 기능 제안을 부탁드립니다

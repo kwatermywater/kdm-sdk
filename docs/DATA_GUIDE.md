@@ -9,7 +9,8 @@
 3. [측정 항목 (measurement_items)](#측정-항목-measurement_items)
 4. [API 기간 제한](#api-기간-제한)
 5. [시설 검색 방법](#시설-검색-방법)
-6. [용어 설명](#용어-설명)
+6. [시설 코드 (Facility Codes)](#시설-코드-facility-codes)
+7. [용어 설명](#용어-설명)
 
 ---
 
@@ -352,6 +353,139 @@ async def list_measurements():
 | 임하댐 | 경북 안동 | 낙동강 | 낙동강 유역 |
 | 합천댐 | 경남 합천 | 낙동강 | 낙동강 유역 |
 | 주암댐 | 전남 순천 | 섬진강 | 광주 용수 공급 |
+
+---
+
+## 시설 코드 (Facility Codes)
+
+KDM SDK에서 시설을 식별하는 두 가지 코드 체계를 제공합니다:
+
+### site_id (내부 식별자)
+
+KDM SDK에서 사용하는 내부 고유 식별자입니다.
+
+**특징:**
+- **타입**: 정수 (integer)
+- **형식**: 5-6자리 숫자
+- **예시**: `50548` (소양강댐), `1822` (춘천 수위관측소)
+- **용도**: KDM SDK 내부에서 시설을 고유하게 식별
+
+**사용 예제:**
+```python
+# site_id로 시설 조회
+result = await client.find_related_stations(
+    dam_id=50548,  # 소양강댐의 site_id
+    direction="downstream"
+)
+```
+
+### original_facility_code (원본 시설코드)
+
+원천 기관(K-water, 환경부 등)에서 부여한 공식 시설 코드입니다.
+
+**특징:**
+- **타입**: 문자열 (string)
+- **형식**: 7-10자리 숫자
+- **예시**:
+  - `"1012110"` - K-water 소양강댐 (7자리, 1로 시작)
+  - `"8018703912"` - 환경부 수질관측소 (10자리, 8로 시작)
+
+**코드 형식별 출처:**
+| 시작 숫자 | 자리수 | 출처 | 시설 유형 |
+|----------|--------|------|----------|
+| **1** | 7자리 | K-water | 댐, 수위관측소 |
+| **8** | 10자리 | 환경부 | 수질측정망 |
+| 기타 | 다양 | 해당 관리기관 | 우량, 기상 등 |
+
+**사용 사례:**
+1. **외부 시스템 연동**: K-water WAMIS, 환경부 물환경정보시스템 등과 데이터 매칭
+2. **데이터 출처 추적**: 원본 데이터가 어느 기관에서 제공되었는지 확인
+3. **레거시 시스템 통합**: 기존 모니터링 시스템의 시설코드와 매칭
+4. **시설 검증**: 여러 데이터베이스에서 동일 시설 확인
+
+**조회 방법:**
+```python
+# 1. 시설 검색 시 original_facility_code 확인
+results = await client.search_facilities(
+    query="소양강댐",
+    facility_type="dam"
+)
+
+dam = results[0]['site']
+print(f"Site ID: {dam['site_id']}")                           # 50548
+print(f"Original Code: {dam['original_facility_code']}")       # "1012110"
+
+# 2. find_related_stations 결과에서 확인
+result = await client.find_related_stations(dam_name="소양강댐")
+
+# 댐 정보
+dam = result['dam']
+print(f"댐 원본코드: {dam['original_facility_code']}")  # "1012110"
+
+# 관련 관측소 정보
+for station in result['stations']:
+    print(f"{station['site_name']}: {station['original_facility_code']}")
+```
+
+### 두 코드의 차이점
+
+| 구분 | site_id | original_facility_code |
+|------|---------|----------------------|
+| **용도** | KDM SDK 내부 식별 | 원천 기관 공식 코드 |
+| **타입** | 정수 | 문자열 |
+| **형식** | 5-6자리 | 7-10자리 |
+| **고유성** | SDK 내 고유 | 원천 기관 내 고유 |
+| **용례** | SDK API 호출 시 사용 | 외부 시스템 연동 |
+| **예시** | `50548` | `"1012110"` |
+
+### 실무 활용 예제
+
+**1. 외부 시스템 매핑 테이블 생성**
+```python
+async def build_mapping_table():
+    """KDM SDK ID와 원본 코드 매핑 테이블 생성"""
+    # 모든 댐 검색
+    dams = await client.search_facilities(query="", facility_type="dam", limit=100)
+
+    mapping = {}
+    for dam in dams:
+        site = dam['site']
+        mapping[site['original_facility_code']] = {
+            'kdm_id': site['site_id'],
+            'name': site['site_name'],
+            'basin': site.get('basin', 'N/A')
+        }
+
+    return mapping
+
+# 사용 예시
+mapping = await build_mapping_table()
+kwater_code = "1012110"  # K-water 시스템의 소양강댐 코드
+
+if kwater_code in mapping:
+    kdm_id = mapping[kwater_code]['kdm_id']
+    # KDM SDK로 데이터 조회
+    result = await client.find_related_stations(dam_id=kdm_id)
+```
+
+**2. 크로스 레퍼런스 검증**
+```python
+async def verify_facility_match(kwater_code: str, expected_name: str):
+    """원본 코드와 시설명이 일치하는지 검증"""
+    results = await client.search_facilities(query=expected_name, facility_type="dam")
+
+    for result in results:
+        site = result['site']
+        if site['original_facility_code'] == kwater_code:
+            print(f"✓ 매칭 성공: {site['site_name']} ({kwater_code})")
+            return True
+
+    print(f"✗ 매칭 실패: {expected_name}의 원본코드가 {kwater_code}와 불일치")
+    return False
+
+# 검증 예시
+await verify_facility_match("1012110", "소양강댐")  # ✓ 성공
+```
 
 ---
 

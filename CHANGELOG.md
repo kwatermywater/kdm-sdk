@@ -5,6 +5,122 @@ All notable changes to KDM SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0-beta] - 2025-12-30
+
+### Added
+
+- **find_related_stations()** - Automatically find upstream/downstream monitoring stations for dams
+  - Supports search by `dam_name` or `dam_id` parameter
+  - Uses Basin matching (priority) + Geographic search (fallback) algorithm
+  - Returns both dam information and related stations with `original_facility_code`
+  - Configurable `direction` (upstream/downstream), `max_distance_km`, and `limit` parameters
+  - Basin matching uses watershed (유역) information for high accuracy
+  - Geographic fallback uses Haversine distance + latitude-based direction detection
+  - Test status: ✅ Tested and working with real data (소양강댐 → 3 downstream stations found)
+
+- **original_facility_code field** - Original facility codes from source agencies
+  - Exposed in all facility search results (`search_facilities`, `find_related_stations`)
+  - Enables cross-referencing with external systems (K-water, Ministry of Environment)
+  - Format: 7-10 digit string codes (e.g., "1012110" for 소양강댐, "8018703912" for environmental stations)
+  - Codes starting with "1": K-water facilities (7 digits)
+  - Codes starting with "8": Ministry of Environment facilities (10 digits)
+  - Available in both dam info and station info in `find_related_stations()` results
+  - Test status: ✅ Tested and verified with multiple facilities
+
+### Changed
+
+- **find_related_stations() return structure** - Enhanced return type with complete context (⚠️ BREAKING CHANGE)
+  - **Old**: `List[Dict]` (stations only)
+  - **New**: `Dict` with `'dam'` and `'stations'` keys
+  - New structure provides complete context including:
+    - Dam information with `site_id`, `site_name`, `original_facility_code`, `basin`, `location`
+    - Related stations list with same metadata fields
+    - Match type indicator (`'basin'` or `'geographic'`)
+  - **Migration**: Update code to access `result['dam']` and `result['stations']` instead of treating result as a list
+  - Example:
+    ```python
+    # Old (v0.1.0)
+    stations = await client.find_related_stations(dam_name="소양강댐")
+    for station in stations:
+        print(station['site_name'])
+
+    # New (v0.2.0-beta)
+    result = await client.find_related_stations(dam_name="소양강댐")
+    print(result['dam']['site_name'])  # Dam info
+    for station in result['stations']:
+        print(station['site_name'])
+    ```
+
+- **Server URL** - Migrated to production environment
+  - Default server: `http://203.237.1.4:8080/sse` (changed from `http://localhost:8001/sse`)
+  - All examples and tests updated to use production server
+  - Backward compatible with custom server URLs via `KDMClient(server_url="...")`
+  - Environment-specific configuration still supported
+
+### Fixed
+
+- **Server connection handling** - Improved connection management in examples
+  - Fixed connection pooling in long-running examples
+  - Added proper error handling for connection failures
+  - Updated all examples to use production server URL
+
+- **Documentation inconsistencies** - Corrected facility examples and references
+  - Fixed rainfall station example from "의암댐(FTP)" to "광주시(남한산초교)" in DATA_GUIDE.md
+  - Updated all localhost references to production server
+  - Corrected API endpoint references across documentation
+
+### Testing
+
+All features in this release have been tested and verified:
+- ✅ `find_related_stations()` with real dam data (소양강댐, 충주댐)
+- ✅ Basin matching algorithm with facilities that have basin information
+- ✅ Geographic fallback with facilities without basin information
+- ✅ `original_facility_code` exposure in all search operations
+- ✅ Server URL migration across all examples and tests
+- ✅ Return structure change validated with integration tests
+
+### Known Issues
+
+- None reported for this beta release
+
+### Migration Guide (v0.1.0 → v0.2.0-beta)
+
+**Breaking Change: find_related_stations() return structure**
+
+If you're using `find_related_stations()`, update your code:
+
+```python
+# Before (v0.1.0)
+stations = await client.find_related_stations(dam_name="소양강댐")
+for station in stations:
+    process_station(station)
+
+# After (v0.2.0-beta)
+result = await client.find_related_stations(dam_name="소양강댐")
+dam_info = result['dam']  # Access dam information
+stations = result['stations']  # Access stations list
+for station in stations:
+    process_station(station)
+    # Now also has access to original_facility_code
+    print(station['original_facility_code'])
+```
+
+**Server URL Change**
+
+No code changes required unless you hardcoded `localhost:8001`:
+
+```python
+# If you hardcoded the old URL
+client = KDMClient(server_url="http://localhost:8001/sse")  # Old
+
+# Update to
+client = KDMClient()  # Uses production server by default
+# Or explicitly specify
+client = KDMClient(server_url="http://203.237.1.4:8080/sse")  # New
+```
+
+---
+
 ## [0.1.0] - 2024-12-24
 
 ### Added

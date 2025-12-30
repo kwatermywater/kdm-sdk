@@ -5,10 +5,11 @@ This directory contains comprehensive examples demonstrating KDM SDK usage.
 ## Table of Contents
 
 1. [Basic Examples](#basic-examples)
-2. [Query API Examples](#query-api-examples)
-3. [FacilityPair Examples](#facilitypair-examples)
-4. [Template Examples](#template-examples)
-5. [Running Examples](#running-examples)
+2. [Related Stations Discovery](#related-stations-discovery)
+3. [Query API Examples](#query-api-examples)
+4. [FacilityPair Examples](#facilitypair-examples)
+5. [Template Examples](#template-examples)
+6. [Running Examples](#running-examples)
 
 ## Basic Examples
 
@@ -52,6 +53,75 @@ Data points: 168
   저수량: 1234.5 백만톤
 ...
 ```
+
+## Related Stations Discovery
+
+### find_related_stations_usage.py
+
+Demonstrates automatic discovery of upstream/downstream monitoring stations related to dams.
+
+**Features Covered**:
+1. **Find by Dam Name**: Discover downstream stations using dam name with automatic basin matching
+2. **Find by Dam ID**: Search using internal site_id for faster, more reliable queries
+3. **Basin vs Geographic Matching**: Understand the two-stage search algorithm (basin priority → geographic fallback)
+4. **Original Facility Codes**: Access and use source agency codes (K-water, Ministry of Environment) for system integration
+5. **Upstream Search**: Find upstream stations to understand inflow sources
+
+**Run**:
+```bash
+python examples/find_related_stations_usage.py
+```
+
+**Expected Output**:
+```
+Example 1: Find Downstream Stations by Dam Name
+
+📍 Dam Information:
+  Name: 소양강댐
+  Site ID: 50548
+  Original Code: 1012110
+  Basin: 소양강댐하류
+
+🌊 Found 3 downstream water level station(s):
+
+1. 춘천
+   Site ID: 1822
+   Original Code: 1018680001
+   Match Type: BASIN
+   Distance: 25.3 km
+
+2. 의암댐
+   Site ID: 1825
+   Original Code: 1018680002
+   Match Type: BASIN
+   Distance: 42.1 km
+
+3. 춘천시(춘천댐하류)
+   Site ID: 50552
+   Original Code: 1018680003
+   Match Type: GEOGRAPHIC
+   Distance: 28.7 km
+```
+
+**Key Concepts**:
+- **Basin Matching**: Uses watershed (유역) information for high-confidence matches
+  - When dam and station share the same basin, they're likely in an upstream-downstream relationship
+  - Example: "소양강댐하류" basin contains stations directly affected by the dam
+
+- **Geographic Search**: Fallback using Haversine distance + direction detection
+  - Used when basin information is unavailable or incomplete
+  - Considers both distance and relative position (upstream/downstream based on latitude)
+
+- **Original Facility Code**: Source agency identifier for external system integration
+  - Format: 7-digit (K-water) or 10-digit (Ministry of Environment)
+  - Enables cross-referencing with WAMIS, water quality databases, etc.
+  - Different from internal `site_id` (integer)
+
+**Use Cases**:
+- Build upstream-downstream analysis datasets for impact studies
+- Create facility relationship maps for watershed modeling
+- Integrate with external monitoring systems using original codes
+- Automate monitoring station discovery for dam operations
 
 ## Query API Examples
 
