@@ -544,12 +544,13 @@ class KDMClient:
 
     async def find_related_stations(
         self,
-        dam_name: str,
+        dam_name: str = None,
+        dam_id: int = None,
         direction: str = "downstream",
         station_type: str = "water_level",
         max_distance_km: float = 100.0,
         limit: int = 10
-    ) -> List[Dict[str, Any]]:
+    ) -> Dict[str, Any]:
         """
         Find upstream or downstream monitoring stations related to a dam
 
@@ -558,70 +559,102 @@ class KDMClient:
         2. Geographic search (fallback): Find stations by distance and direction
 
         Args:
-            dam_name: Name of the dam (e.g., "소양강댐")
+            dam_name: Name of the dam (e.g., "소양강댐"). Either dam_name or dam_id required.
+            dam_id: Site ID of the dam (e.g., 50548). Either dam_name or dam_id required.
             direction: "downstream" or "upstream"
             station_type: Type of station to find (default: "water_level")
             max_distance_km: Maximum distance for geographic search (default: 100.0)
             limit: Maximum number of results (default: 10)
 
         Returns:
-            List of matching stations with site_id, site_name, match_type, etc.
+            Dict with 'dam' info and 'stations' list:
+            {
+                'dam': {
+                    'site_id': 50548,
+                    'site_name': '소양강댐',
+                    'basin': '소양강댐하류',
+                    ...
+                },
+                'stations': [
+                    {'site_id': 1822, 'site_name': '소양강', 'match_type': 'basin', ...},
+                    ...
+                ]
+            }
 
         Raises:
-            ValueError: If dam not found or invalid direction
+            ValueError: If dam not found, invalid direction, or neither dam_name nor dam_id provided
 
         Example:
             >>> client = KDMClient()
             >>> await client.connect()
             >>>
-            >>> # Find downstream water level stations for Soyang Dam
-            >>> stations = await client.find_related_stations(
+            >>> # Find by dam name
+            >>> result = await client.find_related_stations(
             ...     dam_name="소양강댐",
             ...     direction="downstream"
             ... )
+            >>> print(f"Dam: {result['dam']['site_name']} (ID: {result['dam']['site_id']})")
+            >>> for s in result['stations']:
+            ...     print(f"  - {s['site_name']} (ID: {s['site_id']})")
             >>>
-            >>> for s in stations:
-            ...     print(f"{s['site_name']} (ID: {s['site_id']})")
-            춘천시(춘천댐하류) (ID: 11301)
+            >>> # Find by dam site_id
+            >>> result = await client.find_related_stations(
+            ...     dam_id=50548,  # 소양강댐
+            ...     direction="downstream"
+            ... )
         """
         # Step 1: Validate input
+        if not dam_name and not dam_id:
+            raise ValueError("Either dam_name or dam_id must be provided")
+
         if direction not in ["upstream", "downstream"]:
             raise ValueError("direction must be 'upstream' or 'downstream'")
 
+        search_key = f"site_id={dam_id}" if dam_id else f"name={dam_name}"
         logger.info(
             f"[find_related_stations] Searching {direction} "
-            f"{station_type} stations for {dam_name}"
+            f"{station_type} stations for dam {search_key}"
         )
 
         # Step 2: Find dam information
-        dam_results = await self.search_facilities(
-            query=dam_name,
-            facility_type="dam",
-            limit=5
-        )
-
-        if not dam_results:
-            raise ValueError(f"Dam '{dam_name}' not found in catalog")
+        if dam_id:
+            # Search by site_id - search all dams and filter by site_id
+            dam_results = await self.search_facilities(
+                query="",
+                facility_type="dam",
+                limit=1000
+            )
+            dam_results = [r for r in dam_results if r.get("site", r).get("site_id") == dam_id]
+            if not dam_results:
+                raise ValueError(f"Dam with site_id={dam_id} not found in catalog")
+        else:
+            # Search by name
+            dam_results = await self.search_facilities(
+                query=dam_name,
+                facility_type="dam",
+                limit=5
+            )
+            if not dam_results:
+                raise ValueError(f"Dam '{dam_name}' not found in catalog")
 
         # Use first result (most relevant match)
-        # Handle nested structure from MCP server: {'site': {...}, 'measurements': [...]}
         dam_result = dam_results[0]
-        dam_info = dam_result.get("site", dam_result)  # Get 'site' if exists, else use raw result
+        dam_info = dam_result.get("site", dam_result)
         dam_basin = dam_info.get("basin")
         dam_location = dam_info.get("location")
+        dam_name_for_search = dam_info.get("site_name", dam_name or f"site_{dam_id}")
 
         logger.debug(
             f"Dam info: basin={dam_basin}, location={dam_location}"
         )
 
         # Step 3 & 4: Try basin matching first
-        results = []
+        stations = []
         if dam_basin:
             # Extract base name for searching
             base_basin = dam_basin.replace("하류", "").replace("상류", "")
 
             # Search for stations with basin name
-            # Use the base name as query to find related stations
             search_query = base_basin.replace("댐", "")  # e.g., "소양강댐" → "소양강"
 
             all_stations = await self.search_facilities(
@@ -638,33 +671,33 @@ class KDMClient:
                 logger.info(
                     f"Basin matching: found {len(basin_matches)} stations"
                 )
-                results = basin_matches
+                stations = basin_matches
 
         # Step 5: Geographic fallback if basin matching failed
-        if not results and dam_location:
+        if not stations and dam_location:
             logger.info("Basin matching failed, using geographic search")
 
             # Search for nearby stations (use dam name prefix)
-            search_prefix = dam_name.replace("댐", "")[:2]  # Get first 2 chars
+            search_prefix = dam_name_for_search.replace("댐", "")[:2]  # Get first 2 chars
             nearby_stations = await self.search_facilities(
                 query=search_prefix,
                 facility_type=station_type,
                 limit=100
             )
 
-            results = self._geographic_search(
+            stations = self._geographic_search(
                 dam_location, direction, nearby_stations, max_distance_km
             )
 
             logger.info(
-                f"Geographic search: found {len(results)} stations "
+                f"Geographic search: found {len(stations)} stations "
                 f"within {max_distance_km}km"
             )
 
         # Step 6: Handle no results
-        if not results:
+        if not stations:
             logger.warning(
-                f"No {direction} stations found for {dam_name}"
+                f"No {direction} stations found for {dam_name_for_search}"
             )
             if not dam_location:
                 logger.warning(
@@ -672,8 +705,11 @@ class KDMClient:
                     f"cannot perform geographic search"
                 )
 
-        # Step 7: Apply limit and return
-        return results[:limit]
+        # Step 7: Return with dam info and stations
+        return {
+            "dam": dam_info,
+            "stations": stations[:limit]
+        }
 
     async def health_check(self) -> bool:
         """
