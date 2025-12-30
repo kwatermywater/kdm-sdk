@@ -198,18 +198,61 @@ python examples/facility_pair_usage.py
 
 #### Basic Correlation Analysis
 ```python
-pair = FacilityPair(
-    upstream_name="소양강댐",
-    downstream_name="춘천",
-    upstream_type="dam",
-    downstream_type="water_level"
-)
+from kdm_sdk import KDMClient, FacilityPair
+import pandas as pd
 
-result = await pair.fetch_aligned(days=30, time_key="h_1")
-correlation = result.find_optimal_lag(max_lag_hours=12)
+async with KDMClient() as client:
+    # Fetch upstream data (dam)
+    upstream_result = await client.get_water_data(
+        site_name="소양강댐",
+        facility_type="dam",
+        measurement_items=["방류량"],
+        days=30,
+        time_key="h_1"
+    )
 
-print(f"Optimal lag: {correlation.lag_hours:.1f} hours")
-print(f"Correlation: {correlation.correlation:.3f}")
+    # Fetch downstream data (water level)
+    downstream_result = await client.get_water_data(
+        site_name="춘천",
+        facility_type="water_level",
+        measurement_items=["수위"],
+        days=30,
+        time_key="h_1"
+    )
+
+    # Convert to DataFrames
+    def to_df(data):
+        records = []
+        for item in data:
+            record = {"datetime": item.get("datetime")}
+            if "values" in item:
+                for key, val in item["values"].items():
+                    record[key] = val.get("value")
+            records.append(record)
+        df = pd.DataFrame(records)
+        if "datetime" in df.columns:
+            df["datetime"] = pd.to_datetime(df["datetime"])
+            df.set_index("datetime", inplace=True)
+        return df
+
+    upstream_df = to_df(upstream_result.get("data", []))
+    downstream_df = to_df(downstream_result.get("data", []))
+
+    # Create FacilityPair
+    pair = FacilityPair(
+        upstream_name="소양강댐",
+        downstream_name="춘천",
+        upstream_type="dam",
+        downstream_type="water_level",
+        upstream_data=upstream_df,
+        downstream_data=downstream_df
+    )
+
+    # Find optimal lag
+    correlation = pair.find_optimal_lag(max_lag_hours=12)
+
+    print(f"Optimal lag: {correlation.lag_hours:.1f} hours")
+    print(f"Correlation: {correlation.correlation:.3f}")
 ```
 
 #### Lag Detection
@@ -492,14 +535,63 @@ result = await template.execute()
 ### Project 3: Downstream Prediction
 ```python
 # Train ML model to predict downstream levels
-pair = FacilityPair(upstream_name="소양강댐", downstream_name="춘천")
-result = await pair.fetch_aligned(days=365, time_key="h_1")
-df = result.to_dataframe()
+from kdm_sdk import KDMClient, FacilityPair
+import pandas as pd
 
-from sklearn.ensemble import RandomForestRegressor
-X = df[["upstream_flow"]]
-y = df["downstream_level"]
-model.fit(X, y)
+async with KDMClient() as client:
+    # Fetch upstream data (dam)
+    upstream_result = await client.get_water_data(
+        site_name="소양강댐",
+        facility_type="dam",
+        measurement_items=["방류량"],
+        days=365,
+        time_key="h_1"
+    )
+
+    # Fetch downstream data (water level)
+    downstream_result = await client.get_water_data(
+        site_name="춘천",
+        facility_type="water_level",
+        measurement_items=["수위"],
+        days=365,
+        time_key="h_1"
+    )
+
+    # Convert to DataFrames
+    def to_df(data):
+        records = []
+        for item in data:
+            record = {"datetime": item.get("datetime")}
+            if "values" in item:
+                for key, val in item["values"].items():
+                    record[key] = val.get("value")
+            records.append(record)
+        df = pd.DataFrame(records)
+        if "datetime" in df.columns:
+            df["datetime"] = pd.to_datetime(df["datetime"])
+            df.set_index("datetime", inplace=True)
+        return df
+
+    upstream_df = to_df(upstream_result.get("data", []))
+    downstream_df = to_df(downstream_result.get("data", []))
+
+    # Create FacilityPair
+    pair = FacilityPair(
+        upstream_name="소양강댐",
+        downstream_name="춘천",
+        upstream_data=upstream_df,
+        downstream_data=downstream_df
+    )
+
+    # Get aligned data
+    df = pair.to_dataframe(lag_hours=0)
+
+    # Train model
+    from sklearn.ensemble import RandomForestRegressor
+    X = df[["upstream_flow"]]
+    y = df["downstream_level"]
+    model = RandomForestRegressor()
+    model.fit(X, y)
 ```
 
 ## Next Steps

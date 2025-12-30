@@ -116,20 +116,60 @@ from kdm_sdk import FacilityPair
 
 async def correlation_analysis():
     # Analyze dam release impact on downstream water level
-    pair = FacilityPair(
-        upstream_name="소양강댐",
-        downstream_name="춘천시(춘천댐하류)",  # Actual water level station name
-        upstream_type="dam",
-        downstream_type="water_level"
-    )
+    from kdm_sdk import KDMClient
+    import pandas as pd
 
-    # Fetch aligned data
-    result = await pair.fetch_aligned(days=30, time_key="h_1")
+    async with KDMClient() as client:
+        # Fetch upstream data (dam)
+        upstream_result = await client.get_water_data(
+            site_name="소양강댐",
+            facility_type="dam",
+            measurement_items=["방류량"],
+            days=30,
+            time_key="h_1"
+        )
 
-    # Find optimal lag time
-    correlation = result.find_optimal_lag(max_lag_hours=12)
-    print(f"Optimal lag: {correlation.lag_hours:.1f} hours")
-    print(f"Correlation: {correlation.correlation:.3f}")
+        # Fetch downstream data (water level station)
+        downstream_result = await client.get_water_data(
+            site_name="춘천시(춘천댐하류)",
+            facility_type="water_level",
+            measurement_items=["수위"],
+            days=30,
+            time_key="h_1"
+        )
+
+        # Convert to DataFrames
+        def to_df(data):
+            records = []
+            for item in data:
+                record = {"datetime": item.get("datetime")}
+                if "values" in item:
+                    for key, val in item["values"].items():
+                        record[key] = val.get("value")
+                records.append(record)
+            df = pd.DataFrame(records)
+            if "datetime" in df.columns:
+                df["datetime"] = pd.to_datetime(df["datetime"])
+                df.set_index("datetime", inplace=True)
+            return df
+
+        upstream_df = to_df(upstream_result.get("data", []))
+        downstream_df = to_df(downstream_result.get("data", []))
+
+        # Create FacilityPair
+        pair = FacilityPair(
+            upstream_name="소양강댐",
+            downstream_name="춘천시(춘천댐하류)",
+            upstream_type="dam",
+            downstream_type="water_level",
+            upstream_data=upstream_df,
+            downstream_data=downstream_df
+        )
+
+        # Find optimal lag time
+        correlation = pair.find_optimal_lag(max_lag_hours=12)
+        print(f"Optimal lag: {correlation.lag_hours:.1f} hours")
+        print(f"Correlation: {correlation.correlation:.3f}")
 
 asyncio.run(correlation_analysis())
 ```
@@ -275,18 +315,60 @@ result = await KDMQuery() \
 ### 3. Predict Downstream Water Levels
 
 ```python
-pair = FacilityPair(
-    upstream_name="소양강댐",
-    downstream_name="의암댐",
-    lag_hours=5.5  # Water takes 5.5 hours to travel
-)
+from kdm_sdk import KDMClient, FacilityPair
+import pandas as pd
 
-result = await pair.fetch_aligned(days=365, time_key="h_1")
-df = result.to_dataframe()
+async with KDMClient() as client:
+    # Fetch upstream data (dam)
+    upstream_result = await client.get_water_data(
+        site_name="소양강댐",
+        facility_type="dam",
+        measurement_items=["방류량"],
+        days=365,
+        time_key="h_1"
+    )
 
-# Use for ML model training
-X = df[["소양강댐_방류량"]]
-y = df["의암댐_수위"]
+    # Fetch downstream data (dam)
+    downstream_result = await client.get_water_data(
+        site_name="의암댐",
+        facility_type="dam",
+        measurement_items=["수위"],
+        days=365,
+        time_key="h_1"
+    )
+
+    # Convert to DataFrames
+    def to_df(data):
+        records = []
+        for item in data:
+            record = {"datetime": item.get("datetime")}
+            if "values" in item:
+                for key, val in item["values"].items():
+                    record[key] = val.get("value")
+            records.append(record)
+        df = pd.DataFrame(records)
+        if "datetime" in df.columns:
+            df["datetime"] = pd.to_datetime(df["datetime"])
+            df.set_index("datetime", inplace=True)
+        return df
+
+    upstream_df = to_df(upstream_result.get("data", []))
+    downstream_df = to_df(downstream_result.get("data", []))
+
+    # Create FacilityPair
+    pair = FacilityPair(
+        upstream_name="소양강댐",
+        downstream_name="의암댐",
+        upstream_data=upstream_df,
+        downstream_data=downstream_df
+    )
+
+    # Create DataFrame with lag (water takes 5.5 hours to travel)
+    df = pair.to_dataframe(lag_hours=5.5)
+
+    # Use for ML model training
+    X = df[["소양강댐_방류량"]]
+    y = df["의암댐_수위"]
 ```
 
 ## Development

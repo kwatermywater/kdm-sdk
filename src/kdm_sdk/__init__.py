@@ -2,7 +2,16 @@
 KDM SDK - Python Client for KDM MCP Server
 """
 
-__version__ = "0.1.0"
+__version__ = "0.2.1-beta"
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .client import KDMClient
+    from .facilities import FacilityPair, PairResult
+    from .query import KDMQuery
+    from .results import QueryResult, BatchResult
+    from .templates import TemplateBuilder, Template, load_yaml, load_python
 
 
 # Lazy imports to avoid MCP dependency during template-only usage

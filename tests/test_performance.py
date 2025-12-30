@@ -15,6 +15,7 @@ import pytest
 import sys
 import time
 import asyncio
+import pandas as pd
 from pathlib import Path
 from statistics import mean, stdev
 
@@ -322,24 +323,65 @@ async def test_facility_pair_performance(connected_client):
 
     Benchmarks upstream-downstream data fetching and alignment
     """
+    # Helper function to convert KDM data to DataFrame
+    def convert_to_dataframe(data):
+        records = []
+        for item in data:
+            record = {"datetime": item.get("datetime")}
+            if "values" in item:
+                for key, val in item["values"].items():
+                    record[key] = val.get("value")
+            records.append(record)
+        df = pd.DataFrame(records)
+        if "datetime" in df.columns:
+            df["datetime"] = pd.to_datetime(df["datetime"])
+            df.set_index("datetime", inplace=True)
+        return df
+
+    # Measure fetch and data preparation time
+    start_time = time.time()
+
+    # Fetch upstream data (dam)
+    upstream_result = await connected_client.get_water_data(
+        site_name="소양강댐",
+        facility_type="dam",
+        measurement_items=["방류량"],
+        days=30,
+        time_key="h_1"
+    )
+
+    # Fetch downstream data (water level station)
+    downstream_result = await connected_client.get_water_data(
+        site_name="춘천",
+        facility_type="water_level",
+        measurement_items=["수위"],
+        days=30,
+        time_key="h_1"
+    )
+
+    # Convert to DataFrames
+    upstream_data = convert_to_dataframe(upstream_result.get("data", []))
+    downstream_data = convert_to_dataframe(downstream_result.get("data", []))
+
+    # Skip if insufficient data
+    if len(upstream_data) == 0 or len(downstream_data) == 0:
+        pytest.skip("Insufficient data for performance test")
+
+    # Create pair with data
     pair = FacilityPair(
         upstream_name="소양강댐",
         downstream_name="춘천",
         upstream_type="dam",
         downstream_type="water_level",
-        lag_hours=6.0,
+        upstream_data=upstream_data,
+        downstream_data=downstream_data
     )
-
-    # Measure fetch and alignment time
-    start_time = time.time()
-
-    result = await pair.fetch_aligned(days=30, time_key="h_1", client=connected_client)
 
     execution_time = time.time() - start_time
 
     # Measure DataFrame conversion
     df_start = time.time()
-    df = result.to_dataframe()
+    df = pair.to_dataframe(lag_hours=6.0)
     df_time = time.time() - df_start
 
     print(f"\n[Performance] FacilityPair fetch+align: {execution_time:.3f}s")

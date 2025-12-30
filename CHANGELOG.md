@@ -5,6 +5,46 @@ All notable changes to KDM SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1-beta] - 2025-12-30
+
+### Fixed
+
+- **Critical: disconnect() RuntimeError** - Fixed resource cleanup failures during disconnect
+  - Added `finally` blocks to guarantee `_session` and `_sse_context` are set to `None` even when `__aexit__` raises exceptions
+  - Changed cleanup error log level from `WARNING` to `DEBUG` (cleanup errors are expected during shutdown)
+  - Fixes `RuntimeError: Attempted to exit cancel scope in a different task` and similar anyio TaskGroup errors
+  - Test coverage: 5 new test cases covering exception handling, idempotent disconnect, and proper logging
+  - File: `src/kdm_sdk/client.py` lines 127-145
+
+- **Critical: Pylance type recognition failure** - Fixed IDE type inference and autocomplete
+  - Added `TYPE_CHECKING` block to `__init__.py` for static type checkers
+  - Imports all 11 exported symbols under `TYPE_CHECKING` guard (KDMClient, FacilityPair, KDMQuery, etc.)
+  - Preserves lazy loading behavior at runtime (no performance impact)
+  - Fixes VSCode/Pylance showing Union types instead of actual class types
+  - Enables proper IDE autocomplete and type hints for all SDK classes
+  - Test coverage: 6 new test cases verifying lazy loading still works (MCP not imported on module load)
+  - File: `src/kdm_sdk/__init__.py` lines 7-14
+
+- **Critical: Non-existent fetch_aligned() method** - Fixed incorrect documentation and test code
+  - Removed 8 references to non-existent `FacilityPair.fetch_aligned()` method
+  - Updated all code examples with correct pattern:
+    1. Fetch upstream/downstream data separately using `KDMClient.get_water_data()`
+    2. Convert to DataFrames
+    3. Create `FacilityPair` with data
+    4. Use `find_optimal_lag()` or `to_dataframe()` for analysis
+  - Fixed files:
+    - Tests: `test_integration.py`, `test_performance.py` (both now passing)
+    - Docs: `README.md` (2 occurrences), `README.en.md` (2 occurrences), `examples/README.md` (2 occurrences)
+  - All code examples are now executable and tested
+  - Test status: ✅ Integration tests pass with real data
+
+### Testing
+
+- Added 11 new test cases (all passing)
+- Full test suite: 84 unit tests passing in 5.29s
+- No regressions detected
+- TDD methodology: Tests written before implementation
+
 ## [0.2.0-beta] - 2025-12-30
 
 ### Added
@@ -121,7 +161,7 @@ client = KDMClient(server_url="http://203.237.1.4:8080/sse")  # New
 
 ---
 
-## [0.1.0] - 2024-12-24
+## [0.1.0] - 2025-12-24
 
 ### Added
 

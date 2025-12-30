@@ -144,6 +144,110 @@ async def test_health_check():
     assert isinstance(is_healthy, bool)
 
 
+@pytest.mark.asyncio
+async def test_disconnect_sets_session_to_none_on_exception(monkeypatch):
+    """Verify _session = None even if __aexit__ raises"""
+    client = KDMClient()
+    await client.connect()
+
+    # Mock __aexit__ to raise RuntimeError
+    async def mock_aexit(*args):
+        raise RuntimeError("Mock exception during session cleanup")
+
+    if client._session is not None:
+        monkeypatch.setattr(client._session, "__aexit__", mock_aexit)
+
+    # disconnect() should not raise and should set _session to None
+    await client.disconnect()
+    assert client._session is None
+
+
+@pytest.mark.asyncio
+async def test_disconnect_sets_sse_context_to_none_on_exception(monkeypatch):
+    """Verify _sse_context = None even if __aexit__ raises"""
+    client = KDMClient()
+    await client.connect()
+
+    # Mock __aexit__ to raise RuntimeError
+    async def mock_aexit(*args):
+        raise RuntimeError("Mock exception during SSE cleanup")
+
+    if client._sse_context is not None:
+        monkeypatch.setattr(client._sse_context, "__aexit__", mock_aexit)
+
+    # disconnect() should not raise and should set _sse_context to None
+    await client.disconnect()
+    assert client._sse_context is None
+
+
+@pytest.mark.asyncio
+async def test_disconnect_cleans_up_both_even_if_both_fail(monkeypatch):
+    """Verify both resources cleaned up even if both raise"""
+    client = KDMClient()
+    await client.connect()
+
+    # Mock both to raise exceptions
+    async def mock_session_aexit(*args):
+        raise RuntimeError("Session cleanup failed")
+
+    async def mock_sse_aexit(*args):
+        raise RuntimeError("SSE cleanup failed")
+
+    if client._session is not None:
+        monkeypatch.setattr(client._session, "__aexit__", mock_session_aexit)
+
+    if client._sse_context is not None:
+        monkeypatch.setattr(client._sse_context, "__aexit__", mock_sse_aexit)
+
+    # disconnect() should not raise and should clean up both
+    await client.disconnect()
+    assert client._session is None
+    assert client._sse_context is None
+
+
+@pytest.mark.asyncio
+async def test_disconnect_logs_cleanup_errors_as_debug(monkeypatch, caplog):
+    """Verify cleanup errors logged at DEBUG level"""
+    import logging
+
+    client = KDMClient()
+    await client.connect()
+
+    # Mock to raise exception
+    async def mock_aexit(*args):
+        raise RuntimeError("Mock cleanup error")
+
+    if client._session is not None:
+        monkeypatch.setattr(client._session, "__aexit__", mock_aexit)
+
+    # Capture logs at DEBUG level
+    with caplog.at_level(logging.DEBUG):
+        await client.disconnect()
+
+    # Check that error was logged at DEBUG level (not WARNING)
+    debug_messages = [record.message for record in caplog.records if record.levelname == "DEBUG"]
+    assert any("Error during disconnect" in msg or "Mock cleanup error" in msg for msg in debug_messages)
+
+    # Verify no WARNING level logs for cleanup errors
+    warning_messages = [record.message for record in caplog.records if record.levelname == "WARNING"]
+    assert not any("Error during disconnect" in msg for msg in warning_messages)
+
+
+@pytest.mark.asyncio
+async def test_disconnect_idempotent():
+    """Verify calling disconnect twice is safe"""
+    client = KDMClient()
+    await client.connect()
+
+    # First disconnect
+    await client.disconnect()
+    assert not client.is_connected()
+
+    # Second disconnect should not raise
+    await client.disconnect()
+    assert not client.is_connected()
+
+
 # Cleanup fixture
 @pytest.fixture(autouse=True)
 async def cleanup():

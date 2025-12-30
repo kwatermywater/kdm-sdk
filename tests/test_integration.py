@@ -250,28 +250,69 @@ async def test_facility_pair_correlation(connected_client):
 
     Verifies upstream-downstream correlation analysis with lag
     """
+    # Helper function to convert KDM data to DataFrame
+    def convert_to_dataframe(data):
+        records = []
+        for item in data:
+            record = {"datetime": item.get("datetime")}
+            if "values" in item:
+                for key, val in item["values"].items():
+                    record[key] = val.get("value")
+            records.append(record)
+        df = pd.DataFrame(records)
+        if "datetime" in df.columns:
+            df["datetime"] = pd.to_datetime(df["datetime"])
+            df.set_index("datetime", inplace=True)
+        return df
+
+    # Fetch upstream data (dam)
+    upstream_result = await connected_client.get_water_data(
+        site_name="소양강댐",
+        facility_type="dam",
+        measurement_items=["방류량"],
+        days=30,
+        time_key="h_1"
+    )
+
+    # Fetch downstream data (water level station)
+    downstream_result = await connected_client.get_water_data(
+        site_name="춘천",
+        facility_type="water_level",
+        measurement_items=["수위"],
+        days=30,
+        time_key="h_1"
+    )
+
+    # Convert to DataFrames
+    upstream_data = convert_to_dataframe(upstream_result.get("data", []))
+    downstream_data = convert_to_dataframe(downstream_result.get("data", []))
+
+    # Skip if insufficient data
+    if len(upstream_data) == 0 or len(downstream_data) == 0:
+        pytest.skip("Insufficient data for correlation analysis")
+
+    # Create pair with data
     pair = FacilityPair(
         upstream_name="소양강댐",
         downstream_name="춘천",
         upstream_type="dam",
         downstream_type="water_level",
-        lag_hours=6.0,
+        upstream_data=upstream_data,
+        downstream_data=downstream_data
     )
 
-    # Fetch aligned data
-    result = await pair.fetch_aligned(days=30, time_key="h_1", client=connected_client)
-
+    # Analyze optimal lag
+    result = pair.find_optimal_lag(max_lag_hours=12)
     assert result is not None
-    assert isinstance(result, object)  # PairResult
+    assert hasattr(result, 'correlation')
 
-    # Convert to DataFrame
-    df = result.to_dataframe()
+    # Export to DataFrame
+    df = pair.to_dataframe(lag_hours=6.0)
     assert df is not None
     assert isinstance(df, pd.DataFrame)
 
     # Should have columns from both facilities
     columns = df.columns.tolist()
-    # Check for any upstream and downstream data
     assert len(columns) > 0
 
 

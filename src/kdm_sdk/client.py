@@ -129,16 +129,18 @@ class KDMClient:
         if self._session is not None:
             try:
                 await self._session.__aexit__(None, None, None)
-                self._session = None
             except Exception as e:
-                logger.warning(f"[KDM Client] Error during disconnect: {e}")
+                logger.debug(f"[KDM Client] Error during disconnect: {e}")
+            finally:
+                self._session = None
 
         if self._sse_context is not None:
             try:
                 await self._sse_context.__aexit__(None, None, None)
-                self._sse_context = None
             except Exception as e:
-                logger.warning(f"[KDM Client] Error closing SSE context: {e}")
+                logger.debug(f"[KDM Client] Error closing SSE context: {e}")
+            finally:
+                self._sse_context = None
 
         logger.info("[KDM Client] Disconnected")
 

@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="kdm-sdk",
-    version="0.1.0",
+    version="0.2.1-beta",
     description="KDM (K-water Data Model) SDK for water resource data access",
     author="K-water",
     package_dir={"": "src"},
