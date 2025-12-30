@@ -665,8 +665,7 @@ result.to_excel("soyang_data.xlsx")  # 자동으로 한글 인코딩
 이제 기본을 이해하셨다면:
 
 1. **[빠른 시작 가이드](../README.md#빠른-시작)** - 실전 예제
-2. **[Query API 문서](QUERY_API.md)** - 전체 API 레퍼런스
-3. **[예제 모음](../examples/)** - 다양한 사용 사례
-4. **[FacilityPair 가이드](FACILITY_PAIR_QUICKSTART.md)** - 상하류 분석
+2. **[예제 모음](../examples/)** - 다양한 사용 사례
+3. **[CHANGELOG](../CHANGELOG.md)** - 버전 히스토리
 
 문의사항이 있으시면 [GitHub Issues](https://github.com/kwatermywater/kdm-sdk/issues)에 등록해주세요!

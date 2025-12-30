@@ -3,6 +3,9 @@
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
+[![Beta](https://img.shields.io/badge/status-beta-orange.svg)](https://github.com/kwatermywater/kdm-sdk)
+
+> 🚀 **Beta Release** - Python SDK for easy access to K-water Data Model (KDM) data.
 
 Python SDK for accessing K-water Data Model (KDM) through MCP Server.
 
@@ -228,11 +231,9 @@ asyncio.run(find_stations())
 
 ## Documentation
 
-- **[Getting Started](docs/GETTING_STARTED.md)** - Installation, first query, and basic usage
-- **[API Overview](docs/API_OVERVIEW.md)** - High-level architecture and component overview
-- **[Query API](docs/QUERY_API.md)** - Complete KDMQuery API reference
-- **[Templates API](docs/TEMPLATES_API.md)** - Template system documentation
-- **[FacilityPair Guide](docs/FACILITY_PAIR_QUICKSTART.md)** - Upstream-downstream analysis guide
+- **[Quick Start](#quick-start)** - Installation, first query, and basic usage
+- **[Features](#features)** - High-level architecture and component overview
+- **[Data Guide](docs/DATA_GUIDE.md)** - Facility types, measurements, and API reference
 - **[Examples](examples/)** - Comprehensive usage examples
 
 ## Project Structure
@@ -428,3 +429,21 @@ See [CHANGELOG.md](CHANGELOG.md) for version history.
 - Built for K-water's Korean Dam Management system
 - Uses MCP (Model Context Protocol) for data access
 - Developed with Test-Driven Development (TDD) methodology
+
+---
+
+## Beta Notice
+
+⚠️ **This is a beta version.**
+
+This SDK is in beta testing phase. Please conduct thorough testing before using in production environments.
+
+**Known Limitations:**
+- Some measurements may not be available depending on data availability
+- MCP server response times may vary based on network conditions
+
+**Feedback:**
+- Please report bugs and feature suggestions via GitHub Issues
+- Beta tester feedback is invaluable for SDK improvement
+
+**Contact:** GitHub Issues or K-water support team.

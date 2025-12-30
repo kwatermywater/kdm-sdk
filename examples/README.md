@@ -596,10 +596,9 @@ async with KDMClient() as client:
 
 ## Next Steps
 
-- Read [API Overview](../docs/API_OVERVIEW.md) for architecture understanding
-- Check [Query API](../docs/QUERY_API.md) for complete API reference
-- Review [Templates API](../docs/TEMPLATES_API.md) for template system details
-- See [Getting Started](../docs/GETTING_STARTED.md) for step-by-step tutorial
+- Read [README](../README.md) for SDK overview and quick start guide
+- Check [Data Guide](../docs/DATA_GUIDE.md) for facility types, measurements, and API reference
+- Review [CHANGELOG](../CHANGELOG.md) for version history and updates
 
 ## Contributing Examples
 
