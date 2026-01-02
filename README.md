@@ -160,7 +160,7 @@ async def correlation_analysis():
 
         # 하류 데이터 조회 (수위관측소)
         downstream_result = await client.get_water_data(
-            site_name="춘천시(춘천댐하류)",
+            site_name="춘천시(천전리)",
             facility_type="water_level",
             measurement_items=["수위"],
             days=30,
@@ -188,7 +188,7 @@ async def correlation_analysis():
         # FacilityPair 생성
         pair = FacilityPair(
             upstream_name="소양강댐",
-            downstream_name="춘천시(춘천댐하류)",
+            downstream_name="춘천시(천전리)",
             upstream_type="dam",
             downstream_type="water_level",
             upstream_data=upstream_df,
@@ -249,8 +249,7 @@ async def find_stations():
         # 관련 관측소 목록
         for station in result['stations']:
             print(f"- {station['site_name']}: {station['original_facility_code']}")
-            print(f"  매칭방식: {station['match_type']}")  # basin or geographic
-            print(f"  거리: {station['distance_km']:.1f} km")
+            print(f"  매칭방식: {station['match_type']}")  # network, basin, or geographic
 
 asyncio.run(find_stations())
 ```
