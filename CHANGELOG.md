@@ -5,7 +5,7 @@ All notable changes to KDM SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.2.1-beta] - 2025-12-30
+## [0.2.1] - 2025-12-30
 
 ### Fixed
 
@@ -45,7 +45,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - No regressions detected
 - TDD methodology: Tests written before implementation
 
-## [0.2.0-beta] - 2025-12-30
+## [0.2.0] - 2025-12-30
 
 ### Added
 
@@ -84,7 +84,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     for station in stations:
         print(station['site_name'])
 
-    # New (v0.2.0-beta)
+    # New (v0.2.0+)
     result = await client.find_related_stations(dam_name="소양강댐")
     print(result['dam']['site_name'])  # Dam info
     for station in result['stations']:
@@ -123,7 +123,7 @@ All features in this release have been tested and verified:
 
 - None reported for this beta release
 
-### Migration Guide (v0.1.0 → v0.2.0-beta)
+### Migration Guide (v0.1.0 → v0.2.0)
 
 **Breaking Change: find_related_stations() return structure**
 
@@ -135,7 +135,7 @@ stations = await client.find_related_stations(dam_name="소양강댐")
 for station in stations:
     process_station(station)
 
-# After (v0.2.0-beta)
+# After (v0.2.0+)
 result = await client.find_related_stations(dam_name="소양강댐")
 dam_info = result['dam']  # Access dam information
 stations = result['stations']  # Access stations list
