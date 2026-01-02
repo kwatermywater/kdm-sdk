@@ -229,11 +229,10 @@ async def find_stations():
 asyncio.run(find_stations())
 ```
 
-> ⚠️ **Known Limitations**
-> - **Downstream** search: ✅ Works well (basin matching)
-> - **Upstream** search: ⚠️ Limited basin data → falls back to geographic search (lower accuracy)
-> - Number of linked stations varies by dam (e.g., Soyang Dam: 3, Paldang Dam: 1)
-> - Only facilities registered in MCP server are searchable
+> ✅ **v0.2.2 Improvements**: Water flow network graph-based search for much better accuracy
+> - **Downstream** search: ✅ Soyang Dam: 10, Paldang Dam: 10 (previously 3, 1)
+> - **Upstream** search: ⚠️ Awaiting MCP server update (currently uses legacy fallback)
+> - Check `match_type: "network"` field to identify result source
 
 ## Documentation
 

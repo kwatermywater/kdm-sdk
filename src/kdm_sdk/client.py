@@ -519,6 +519,10 @@ class KDMClient:
             if not station_loc:
                 continue
 
+            # Validate location has valid lat/lng values
+            if station_loc.get("lat") is None or station_loc.get("lng") is None:
+                continue
+
             # Calculate distance
             distance = self._calculate_distance(dam_location, station_loc)
 
@@ -544,6 +548,90 @@ class KDMClient:
 
         return candidates
 
+    async def _find_related_stations_via_network(
+        self,
+        dam_name: str = None,
+        dam_id: int = None,
+        direction: str = "downstream",
+        limit: int = 10
+    ) -> Dict[str, Any]:
+        """
+        Find related stations using water flow network (new MCP tools).
+
+        Uses get_downstream_stations or get_upstream_stations MCP tools
+        which are based on water flow network graph for accurate results.
+
+        Args:
+            dam_name: Name of the dam
+            dam_id: Site ID of the dam
+            direction: "downstream" or "upstream"
+            limit: Maximum number of results
+
+        Returns:
+            Dict with 'dam' info and 'stations' list, or None if tools not available
+
+        Raises:
+            Exception if MCP tools not available
+        """
+        # Determine which tool to call
+        tool_name = f"get_{direction}_stations"
+
+        # Build arguments
+        args = {"limit": limit}
+        if dam_name:
+            args["dam_name"] = dam_name
+        if dam_id:
+            args["dam_id"] = dam_id
+
+        logger.debug(f"[_find_related_stations_via_network] Calling {tool_name} with {args}")
+
+        # Call the MCP tool
+        result = await self._call_tool(tool_name, args)
+
+        if not result:
+            return None
+
+        # Parse result - handle both string and dict responses
+        if isinstance(result, str):
+            import json
+            try:
+                result = json.loads(result)
+            except json.JSONDecodeError:
+                logger.warning(f"Failed to parse {tool_name} response as JSON")
+                return None
+
+        # Check for success
+        if not result.get("success", True):
+            logger.warning(f"{tool_name} returned error: {result.get('message', 'Unknown error')}")
+            return None
+
+        # Transform response to match expected format
+        stations = []
+        for station in result.get("stations", []):
+            stations.append({
+                "site_id": station.get("site_id"),
+                "site_name": station.get("site_name"),
+                "facility_type": station.get("facility_type", "water_level"),
+                "match_type": "network",  # Indicate this came from water flow network
+                "confidence": station.get("confidence", "high"),
+                "original_facility_code": station.get("original_facility_code"),
+                "location": station.get("location"),
+                "basin": station.get("basin"),
+            })
+
+        # Build dam info from response
+        dam_info = {
+            "site_name": result.get("dam_name", dam_name),
+            "site_id": result.get("dam_id", dam_id),
+        }
+
+        return {
+            "dam": dam_info,
+            "stations": stations[:limit],
+            "source": "water_flow_network",
+            "message": result.get("message", "")
+        }
+
     async def find_related_stations(
         self,
         dam_name: str = None,
@@ -556,16 +644,15 @@ class KDMClient:
         """
         Find upstream or downstream monitoring stations related to a dam
 
-        Uses two strategies:
-        1. Basin matching (priority): Find stations in the same watershed
-        2. Geographic search (fallback): Find stations by distance and direction
+        Uses water flow network graph for accurate results (MCP server v2.0+).
+        Falls back to basin matching + geographic search for older servers.
 
         Args:
             dam_name: Name of the dam (e.g., "소양강댐"). Either dam_name or dam_id required.
             dam_id: Site ID of the dam (e.g., 50548). Either dam_name or dam_id required.
             direction: "downstream" or "upstream"
             station_type: Type of station to find (default: "water_level")
-            max_distance_km: Maximum distance for geographic search (default: 100.0)
+            max_distance_km: Maximum distance for geographic search fallback (default: 100.0)
             limit: Maximum number of results (default: 10)
 
         Returns:
@@ -578,7 +665,7 @@ class KDMClient:
                     ...
                 },
                 'stations': [
-                    {'site_id': 1822, 'site_name': '소양강', 'match_type': 'basin', ...},
+                    {'site_id': 1822, 'site_name': '소양강', 'match_type': 'network', ...},
                     ...
                 ]
             }
@@ -617,6 +704,26 @@ class KDMClient:
             f"[find_related_stations] Searching {direction} "
             f"{station_type} stations for dam {search_key}"
         )
+
+        # Try new MCP tools first (water flow network based)
+        try:
+            result = await self._find_related_stations_via_network(
+                dam_name=dam_name,
+                dam_id=dam_id,
+                direction=direction,
+                limit=limit
+            )
+            if result and result.get("stations"):
+                logger.info(
+                    f"[find_related_stations] Found {len(result['stations'])} stations "
+                    f"via water flow network"
+                )
+                return result
+        except Exception as e:
+            logger.debug(f"[find_related_stations] Network tools not available: {e}")
+
+        # Fallback to legacy basin matching + geographic search
+        logger.info("[find_related_stations] Falling back to legacy search")
 
         # Step 2: Find dam information
         if dam_id:

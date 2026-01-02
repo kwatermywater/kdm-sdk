@@ -5,6 +5,24 @@ All notable changes to KDM SDK will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.2] - 2026-01-02
+
+### Improved
+
+- **find_related_stations() - Water Flow Network 지원**
+  - MCP 서버의 새 도구 (`get_downstream_stations`, `get_upstream_stations`) 활용
+  - 물흐름 네트워크 그래프 기반으로 더 정확한 결과 제공
+  - **하류 검색 결과 대폭 개선**: 소양강댐 3개 → 10개, 팔당댐 1개 → 10개
+  - 새 도구 미지원 시 기존 로직(basin matching + geographic search)으로 자동 fallback
+  - `match_type: "network"` 필드로 결과 출처 구분 가능
+  - 이전 버전과 100% 호환 (breaking change 없음)
+
+### Fixed
+
+- **_geographic_search() None 위치 처리**
+  - 위치 정보가 없거나 lat/lng가 None인 시설 건너뛰기
+  - 상류 검색 시 발생하던 TypeError 수정
+
 ## [0.2.1] - 2025-12-30
 
 ### Fixed
