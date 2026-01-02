@@ -234,6 +234,83 @@ asyncio.run(find_stations())
 > - **Upstream** search: ⚠️ Awaiting MCP server update (currently uses legacy fallback)
 > - Check `match_type: "network"` field to identify result source
 
+### Analyst Workflow: Downstream Impact Analysis
+
+Complete workflow for analyzing dam release impact on downstream water levels.
+
+```python
+import asyncio
+import pandas as pd
+from kdm_sdk import KDMClient, FacilityPair
+
+async def main():
+    async with KDMClient() as client:
+        # 1. Auto-discover downstream stations
+        result = await client.find_related_stations(
+            dam_name="소양강댐",
+            direction="downstream",
+            limit=5
+        )
+        downstream_station = result["stations"][0]  # Select first station
+
+        # 2. Fetch dam discharge + downstream water level data
+        upstream_result = await client.get_water_data(
+            site_name="소양강댐",
+            facility_type="dam",
+            measurement_items=["방류량"],  # Discharge
+            days=30, time_key="h_1"
+        )
+        downstream_result = await client.get_water_data(
+            site_name=downstream_station["site_name"],
+            facility_type="water_level",
+            measurement_items=["수위"],  # Water level
+            days=30, time_key="h_1"
+        )
+
+        # 3. Convert to DataFrame
+        def to_df(data):
+            records = []
+            for item in data.get("data", []):
+                record = {"datetime": item.get("datetime")}
+                for key, val in item.get("values", {}).items():
+                    record[key] = val.get("value")
+                records.append(record)
+            df = pd.DataFrame(records)
+            df["datetime"] = pd.to_datetime(df["datetime"])
+            return df.set_index("datetime")
+
+        upstream_df = to_df(upstream_result)
+        downstream_df = to_df(downstream_result)
+
+        # 4. Find optimal time lag
+        pair = FacilityPair(
+            upstream_name="소양강댐",
+            downstream_name=downstream_station["site_name"],
+            upstream_data=upstream_df,
+            downstream_data=downstream_df
+        )
+        correlation = pair.find_optimal_lag(max_lag_hours=12)
+        print(f"Optimal lag: {correlation.lag_hours:.1f} hours")
+        print(f"Correlation: {correlation.correlation:.3f}")
+
+        # 5. Save lag-aligned DataFrame
+        aligned_df = pair.to_dataframe(lag_hours=correlation.lag_hours)
+        aligned_df.to_csv("analysis_result.csv", encoding="utf-8-sig")
+
+asyncio.run(main())
+```
+
+**Output:**
+```
+Optimal lag: 2.0 hours
+Correlation: 0.847
+
+Interpretation: Water level changes at the downstream station are observed
+approximately 2 hours after dam discharge.
+```
+
+> 📁 Full code: [examples/downstream_analysis.py](examples/downstream_analysis.py)
+
 ## Documentation
 
 - **[Quick Start](#quick-start)** - Installation, first query, and basic usage

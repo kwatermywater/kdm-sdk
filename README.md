@@ -260,6 +260,82 @@ asyncio.run(find_stations())
 > - **상류(upstream)** 검색: ⚠️ MCP 서버 업데이트 대기 중 (현재 legacy fallback 사용)
 > - `match_type: "network"` 필드로 결과 출처 확인 가능
 
+### 분석가용 워크플로우: 하류 영향 분석
+
+댐 방류가 하류 수위에 미치는 영향을 분석하는 전체 워크플로우입니다.
+
+```python
+import asyncio
+import pandas as pd
+from kdm_sdk import KDMClient, FacilityPair
+
+async def main():
+    async with KDMClient() as client:
+        # 1. 하류 관측소 자동 탐색
+        result = await client.find_related_stations(
+            dam_name="소양강댐",
+            direction="downstream",
+            limit=5
+        )
+        downstream_station = result["stations"][0]  # 첫 번째 관측소 선택
+
+        # 2. 댐 방류량 + 하류 수위 데이터 조회
+        upstream_result = await client.get_water_data(
+            site_name="소양강댐",
+            facility_type="dam",
+            measurement_items=["방류량"],
+            days=30, time_key="h_1"
+        )
+        downstream_result = await client.get_water_data(
+            site_name=downstream_station["site_name"],
+            facility_type="water_level",
+            measurement_items=["수위"],
+            days=30, time_key="h_1"
+        )
+
+        # 3. DataFrame 변환
+        def to_df(data):
+            records = []
+            for item in data.get("data", []):
+                record = {"datetime": item.get("datetime")}
+                for key, val in item.get("values", {}).items():
+                    record[key] = val.get("value")
+                records.append(record)
+            df = pd.DataFrame(records)
+            df["datetime"] = pd.to_datetime(df["datetime"])
+            return df.set_index("datetime")
+
+        upstream_df = to_df(upstream_result)
+        downstream_df = to_df(downstream_result)
+
+        # 4. 최적 시간차(lag) 분석
+        pair = FacilityPair(
+            upstream_name="소양강댐",
+            downstream_name=downstream_station["site_name"],
+            upstream_data=upstream_df,
+            downstream_data=downstream_df
+        )
+        correlation = pair.find_optimal_lag(max_lag_hours=12)
+        print(f"최적 시간차: {correlation.lag_hours:.1f}시간")
+        print(f"상관계수: {correlation.correlation:.3f}")
+
+        # 5. 시간차 적용된 DataFrame 저장
+        aligned_df = pair.to_dataframe(lag_hours=correlation.lag_hours)
+        aligned_df.to_csv("analysis_result.csv", encoding="utf-8-sig")
+
+asyncio.run(main())
+```
+
+**실행 결과:**
+```
+최적 시간차: 2.0시간
+상관계수: 0.847
+
+해석: 소양강댐에서 방류하면 약 2시간 후 춘천시(천전리)에서 수위 변화가 관측됩니다.
+```
+
+> 📁 전체 코드: [examples/downstream_analysis.py](examples/downstream_analysis.py)
+
 ## 문서
 
 - **[📚 데이터 가이드](docs/DATA_GUIDE.md)** ⭐ **필독** - 시설 유형, 측정 항목, 용어 설명, 초보자 필수
